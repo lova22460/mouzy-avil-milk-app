@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, redirect, session
 from datetime import datetime
 import sqlite3 #import
+import os
 
 DB_NAME = "mouzy.db" #DB functions
 
@@ -48,8 +49,7 @@ def init_db():
 
 app = Flask(__name__) 
 
-app.secret_key = "mouzy-kitchen-secret"
-KITCHEN_PIN = "2246"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 # =========================
 # STOCK
