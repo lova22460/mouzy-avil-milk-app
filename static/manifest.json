@@ -1,0 +1,10 @@
+{
+    "name": "Mouzy Avil Milk",
+    "short_name": "Mouzy",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ff9800",
+    "description": "Mouzy Avil Milk Stock Management App",
+    "icons": []
+}
