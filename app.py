@@ -10,13 +10,29 @@ KITCHEN_PIN = "2246"
 DB_NAME = "mouzy.db" #DB functions
 
 
+class DBWrapper:
+    def __init__(self, conn, is_postgres=False):
+        self.conn = conn
+        self.is_postgres = is_postgres
+
+    def execute(self, sql, params=()):
+        return self.conn.cursor().execute(sql, params)
+
+    def commit(self):
+        return self.conn.commit()
+
+    def close(self):
+        return self.conn.close()
+
+
 def get_db():
     if DATABASE_URL:
-        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return DBWrapper(conn, is_postgres=True)
 
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
-    return conn
+    return DBWrapper(conn, is_postgres=False)
 
 def init_db():
     conn = get_db()
