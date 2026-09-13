@@ -48,7 +48,7 @@ def init_db():
     conn.close()
 
 app = Flask(__name__) 
-
+KITCHEN_PIN = "2246"
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 # =========================
