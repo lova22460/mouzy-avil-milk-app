@@ -2,53 +2,92 @@ from flask import Flask, render_template_string, request, redirect, session
 from datetime import datetime
 import sqlite3 #import
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
+KITCHEN_PIN = "2246"
 DB_NAME = "mouzy.db" #DB functions
 
 
 def get_db():
+    if DATABASE_URL:
+        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def init_db():
     conn = get_db()
 
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS stock (
-            ingredient TEXT PRIMARY KEY,
-            status TEXT NOT NULL,
-            qty TEXT DEFAULT ''
-        )
-    """)
-
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS stock_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item TEXT NOT NULL,
-            status TEXT NOT NULL,
-            qty TEXT DEFAULT '',
-            time TEXT NOT NULL
-        )
-    """)
-    # Save existing stock data into database
-    for ingredient, data in stock.items():
+    if DATABASE_URL:
+        # PostgreSQL
         conn.execute("""
-            INSERT OR IGNORE INTO stock
-            (ingredient, status, qty)
-            VALUES (?, ?, ?)
-        """, (
-            ingredient,
-            data["status"],
-            data.get("qty", "")
-        ))
+            CREATE TABLE IF NOT EXISTS stock (
+                ingredient TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                qty TEXT DEFAULT ''
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stock_history (
+                id SERIAL PRIMARY KEY,
+                item TEXT NOT NULL,
+                status TEXT NOT NULL,
+                qty TEXT DEFAULT '',
+                time TEXT NOT NULL
+            )
+        """)
+
+        for ingredient, data in stock.items():
+            conn.execute("""
+                INSERT INTO stock
+                (ingredient, status, qty)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (ingredient) DO NOTHING
+            """, (
+                ingredient,
+                data["status"],
+                data.get("qty", "")
+            ))
+
+    else:
+        # SQLite — local VS Code
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stock (
+                ingredient TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                qty TEXT DEFAULT ''
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS stock_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item TEXT NOT NULL,
+                status TEXT NOT NULL,
+                qty TEXT DEFAULT '',
+                time TEXT NOT NULL
+            )
+        """)
+
+        for ingredient, data in stock.items():
+            conn.execute("""
+                INSERT OR IGNORE INTO stock
+                (ingredient, status, qty)
+                VALUES (?, ?, ?)
+            """, (
+                ingredient,
+                data["status"],
+                data.get("qty", "")
+            ))
 
     conn.commit()
     conn.close()
 
-app = Flask(__name__) 
-KITCHEN_PIN = "2246"
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 # =========================
@@ -598,28 +637,34 @@ def update():
 
     # Save stock status to database
     conn = get_db()
+    saved_qty = qty if status == "LIMITED" else ""
 
-    conn.execute("""
-        UPDATE stock
-        SET status = ?, qty = ?
-        WHERE ingredient = ?
-    """, (
-        status,
-        qty if status == "LIMITED" else "",
-        ingredient
-    ))
+    if DATABASE_URL:
+        conn.execute("""
+            UPDATE stock
+            SET status = %s, qty = %s
+            WHERE ingredient = %s
+        """, (status, saved_qty, ingredient))
 
-    # Save history to database
-    conn.execute("""
-        INSERT INTO stock_history
-        (item, status, qty, time)
-        VALUES (?, ?, ?, ?)
-    """, (
-        ingredient,
-        status,
-        qty if status == "LIMITED" else "",
-        datetime.now().strftime("%d-%m-%Y %I:%M:%S %p")
-    ))
+        conn.execute("""
+            INSERT INTO stock_history
+            (item, status, qty, time)
+            VALUES (%s, %s, %s, %s)
+        """, (ingredient, status, saved_qty,
+               datetime.now().strftime("%d-%m-%Y %I:%M:%S %p")))
+    else:
+        conn.execute("""
+            UPDATE stock
+            SET status = ?, qty = ?
+            WHERE ingredient = ?
+        """, (status, saved_qty, ingredient))
+
+        conn.execute("""
+            INSERT INTO stock_history
+            (item, status, qty, time)
+            VALUES (?, ?, ?, ?)
+        """, (ingredient, status, saved_qty,
+               datetime.now().strftime("%d-%m-%Y %I:%M:%S %p")))
 
     conn.commit()
     conn.close()
