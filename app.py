@@ -207,6 +207,12 @@ def init_menu_controls():
             )
         """)
 
+        # Migration: older Phase 2 databases may already have item_controls
+        # without the manual_status column. Add it before any INSERT uses it.
+        cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'item_controls' AND column_name = 'manual_status'")
+        if cur.fetchone() is None:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
+
         for category, items in menu.items():
             cur.execute("""
                 INSERT INTO category_controls (category, enabled)
@@ -236,6 +242,13 @@ def init_menu_controls():
             )
         """)
 
+        # Migration: older local databases may already have item_controls
+        # without the manual_status column. Add it before any INSERT uses it.
+        cur.execute("PRAGMA table_info(item_controls)")
+        cols = [r[1] for r in cur.fetchall()]
+        if "manual_status" not in cols:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
+
         for category, items in menu.items():
             cur.execute("""
                 INSERT OR IGNORE INTO category_controls (category, enabled)
@@ -246,16 +259,6 @@ def init_menu_controls():
                     INSERT OR IGNORE INTO item_controls (category, item, enabled, manual_status)
                     VALUES (?, ?, 1, 'AUTO')
                 """, (category, item))
-
-    if DATABASE_URL:
-        cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'item_controls' AND column_name = 'manual_status'")
-        if cur.fetchone() is None:
-            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
-    else:
-        cur.execute("PRAGMA table_info(item_controls)")
-        cols = [r[1] for r in cur.fetchall()]
-        if "manual_status" not in cols:
-            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
 
     conn.commit()
     cur.close()
