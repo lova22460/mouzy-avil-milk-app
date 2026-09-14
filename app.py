@@ -1243,16 +1243,16 @@ Quantity: <b>{{ x.qty }}</b>
 <button class="{{ 'category-off-btn' if data.enabled else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data.enabled else '🟢 TURN CATEGORY ON' }}</button>
 </form>
 </div>
-{% for item in data.items %}
+{% for item in data["items"] %}
 <div class="menu-item">
-<span>{{ item.name }}</span>
+<span>{{ item["name"] }}</span>
 <span>
-<span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 CLOSED' }}</span>
+<span class="{{ 'green' if item['status'] == 'AVAILABLE' else 'yellow' if item['status'] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item['status'] == 'AVAILABLE' else '🟡 LIMITED' if item['status'] == 'LIMITED' else '🔴 CLOSED' }}</span>
 <form method="POST" action="/toggle-item" style="display:inline; margin-left:8px;">
 <input type="hidden" name="category" value="{{ category }}">
-<input type="hidden" name="item" value="{{ item.name }}">
-<input type="hidden" name="action" value="{{ 'OFF' if item.enabled else 'ON' }}">
-<button class="{{ 'item-off-btn' if item.enabled else 'item-on-btn' }}">{{ 'OFF' if item.enabled else 'ON' }}</button>
+<input type="hidden" name="item" value="{{ item['name'] }}">
+<input type="hidden" name="action" value="{{ 'OFF' if item['enabled'] else 'ON' }}">
+<button class="{{ 'item-off-btn' if item['enabled'] else 'item-on-btn' }}">{{ 'OFF' if item['enabled'] else 'ON' }}</button>
 </form>
 </span>
 </div>
@@ -1521,8 +1521,8 @@ Quantity:
 <details class="menu-category">
 <summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OFF' }}</span></summary>
 <div class="category-items">
-{% for item in data.items %}
-<div class="menu-item"><span>{{ item.name }}</span><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 CLOSED' }}</span></div>
+{% for item in data["items"] %}
+<div class="menu-item"><span>{{ item["name"] }}</span><span class="{{ 'green' if item['status'] == 'AVAILABLE' else 'yellow' if item['status'] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item['status'] == 'AVAILABLE' else '🟡 LIMITED' if item['status'] == 'LIMITED' else '🔴 CLOSED' }}</span></div>
 {% endfor %}
 </div>
 </details>
