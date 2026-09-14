@@ -181,25 +181,134 @@ menu = {
 }
 
 
+# =========================
+# MENU CONTROLS (PHASE 2)
+# =========================
+
+def init_menu_controls():
+    """Create persistent ON/OFF controls for categories and individual items."""
+    conn = get_db()
+    cur = conn.cursor()
+
+    if DATABASE_URL:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS category_controls (
+                category TEXT PRIMARY KEY,
+                enabled BOOLEAN NOT NULL DEFAULT TRUE
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS item_controls (
+                category TEXT NOT NULL,
+                item TEXT NOT NULL,
+                enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                PRIMARY KEY (category, item)
+            )
+        """)
+
+        for category, items in menu.items():
+            cur.execute("""
+                INSERT INTO category_controls (category, enabled)
+                VALUES (%s, TRUE)
+                ON CONFLICT (category) DO NOTHING
+            """, (category,))
+            for item in items:
+                cur.execute("""
+                    INSERT INTO item_controls (category, item, enabled)
+                    VALUES (%s, %s, TRUE)
+                    ON CONFLICT (category, item) DO NOTHING
+                """, (category, item))
+    else:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS category_controls (
+                category TEXT PRIMARY KEY,
+                enabled INTEGER NOT NULL DEFAULT 1
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS item_controls (
+                category TEXT NOT NULL,
+                item TEXT NOT NULL,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                PRIMARY KEY (category, item)
+            )
+        """)
+
+        for category, items in menu.items():
+            cur.execute("""
+                INSERT OR IGNORE INTO category_controls (category, enabled)
+                VALUES (?, 1)
+            """, (category,))
+            for item in items:
+                cur.execute("""
+                    INSERT OR IGNORE INTO item_controls (category, item, enabled)
+                    VALUES (?, ?, 1)
+                """, (category, item))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def load_menu_controls():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT category, enabled FROM category_controls")
+    category_rows = cur.fetchall()
+    cur.execute("SELECT category, item, enabled FROM item_controls")
+    item_rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    categories = {row["category"]: bool(row["enabled"]) for row in category_rows}
+    items = {(row["category"], row["item"]): bool(row["enabled"]) for row in item_rows}
+    return categories, items
+
+
+init_menu_controls()
+
+
+def effective_item_status(category, item, dependencies):
+    """Final menu status: manual OFF first, then category/dependency rules."""
+    category_enabled, item_enabled = load_menu_controls()
+
+    if not category_enabled.get(category, True):
+        return "CLOSED"
+
+    if not item_enabled.get((category, item), True):
+        return "CLOSED"
+
+    for ingredient in dependencies:
+        if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
+            return "CLOSED"
+
+    for ingredient in dependencies:
+        if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "LIMITED":
+            return "LIMITED"
+
+    return "AVAILABLE"
+
+
 
 # =========================
 # MENU STATUS
 # =========================
 
-def item_status(dependencies):
-    
+def item_status(dependencies, category=None, item=None):
+    # Backward-compatible wrapper used by dependency display.
+    if category is not None and item is not None:
+        return effective_item_status(category, item, dependencies)
 
     for ingredient in dependencies:
-
-        if stock[ingredient]["status"] == "OUT":
+        if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
             return "CLOSED"
 
     for ingredient in dependencies:
-
-        if stock[ingredient]["status"] == "LIMITED":
+        if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "LIMITED":
             return "LIMITED"
 
     return "AVAILABLE"
+
 
 
 # =========================
@@ -219,7 +328,7 @@ def affected_menu(ingredient):
                 result.append({
                     "category": category,
                     "item": item,
-                    "status": item_status(dependencies)
+                    "status": item_status(dependencies, category, item)
                 })
 
     return result
@@ -483,17 +592,22 @@ def staff():
             })
 
 
+    category_controls, item_controls = load_menu_controls()
     menu_status = {}
 
     for category, items in menu.items():
 
-        menu_status[category] = []
+        menu_status[category] = {
+            "enabled": category_controls.get(category, True),
+            "items": []
+        }
 
         for item, dependencies in items.items():
 
-            menu_status[category].append({
+            menu_status[category]["items"].append({
                 "name": item,
-                "status": item_status(dependencies)
+                "status": item_status(dependencies, category, item),
+                "enabled": item_controls.get((category, item), True)
             })
 
     conn = get_db()
@@ -518,6 +632,69 @@ def staff():
         menu_status=menu_status,
         history=latest_history
     )
+
+
+# =========================
+# PHASE 2 — CATEGORY / ITEM ON-OFF
+# =========================
+
+@app.route("/toggle-category", methods=["POST"])
+def toggle_category():
+    if not session.get("kitchen"):
+        return redirect("/login")
+
+    category = request.form.get("category", "")
+    action = request.form.get("action", "OFF")
+    enabled = action == "ON"
+
+    if category not in menu:
+        return redirect("/")
+
+    conn = get_db()
+    cur = conn.cursor()
+    if DATABASE_URL:
+        cur.execute("UPDATE category_controls SET enabled = %s WHERE category = %s", (enabled, category))
+    else:
+        cur.execute("UPDATE category_controls SET enabled = ? WHERE category = ?", (1 if enabled else 0, category))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/")
+
+
+@app.route("/toggle-item", methods=["POST"])
+def toggle_item():
+    if not session.get("kitchen"):
+        return redirect("/login")
+
+    category = request.form.get("category", "")
+    item = request.form.get("item", "")
+    action = request.form.get("action", "OFF")
+    enabled = action == "ON"
+
+    if category not in menu or item not in menu[category]:
+        return redirect("/")
+
+    conn = get_db()
+    cur = conn.cursor()
+    if DATABASE_URL:
+        cur.execute("""
+            UPDATE item_controls
+            SET enabled = %s
+            WHERE category = %s AND item = %s
+        """, (enabled, category, item))
+    else:
+        cur.execute("""
+            UPDATE item_controls
+            SET enabled = ?
+            WHERE category = ? AND item = ?
+        """, (1 if enabled else 0, category, item))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/")
 
 
 # =========================
@@ -615,17 +792,22 @@ def home():
             })
 
 
+    category_controls, item_controls = load_menu_controls()
     menu_status = {}
 
     for category, items in menu.items():
 
-        menu_status[category] = []
+        menu_status[category] = {
+            "enabled": category_controls.get(category, True),
+            "items": []
+        }
 
         for item, dependencies in items.items():
 
-            menu_status[category].append({
+            menu_status[category]["items"].append({
                 "name": item,
-                "status": item_status(dependencies)
+                "status": item_status(dependencies, category, item),
+                "enabled": item_controls.get((category, item), True)
             })
 
 
@@ -768,6 +950,30 @@ input {
 .small {
     color: #777;
     font-size: 13px;
+}
+
+.category-state {
+    float: right;
+    font-size: 13px;
+}
+.cat-on { color: green; }
+.cat-off { color: red; }
+.control-row {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+.category-off-btn, .category-on-btn, .item-off-btn, .item-on-btn {
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-weight: bold;
+}
+.category-off-btn, .item-off-btn { background: #dc3545; }
+.category-on-btn, .item-on-btn { background: #28a745; }
+.item-off-btn, .item-on-btn {
+    padding: 4px 7px;
+    font-size: 11px;
 }
 
 </style>
@@ -1026,12 +1232,30 @@ Quantity: <b>{{ x.qty }}</b>
 <div class="section">
 <h2>🥤 MENU STRUCTURE</h2>
 <p class="small">All categories are closed by default. Tap a category to expand.</p>
-{% for category, items in menu_status.items() %}
+{% for category, data in menu_status.items() %}
 <details class="menu-category">
-<summary>{{ category }} <span class="small">({{ items|length }} items)</span></summary>
+<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OFF' }}</span></summary>
 <div class="category-items">
-{% for item in items %}
-<div class="menu-item"><span>{{ item.name }}</span><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 CLOSED' }}</span></div>
+<div class="control-row">
+<form method="POST" action="/toggle-category">
+<input type="hidden" name="category" value="{{ category }}">
+<input type="hidden" name="action" value="{{ 'OFF' if data.enabled else 'ON' }}">
+<button class="{{ 'category-off-btn' if data.enabled else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data.enabled else '🟢 TURN CATEGORY ON' }}</button>
+</form>
+</div>
+{% for item in data.items %}
+<div class="menu-item">
+<span>{{ item.name }}</span>
+<span>
+<span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 CLOSED' }}</span>
+<form method="POST" action="/toggle-item" style="display:inline; margin-left:8px;">
+<input type="hidden" name="category" value="{{ category }}">
+<input type="hidden" name="item" value="{{ item.name }}">
+<input type="hidden" name="action" value="{{ 'OFF' if item.enabled else 'ON' }}">
+<button class="{{ 'item-off-btn' if item.enabled else 'item-on-btn' }}">{{ 'OFF' if item.enabled else 'ON' }}</button>
+</form>
+</span>
+</div>
 {% endfor %}
 </div>
 </details>
@@ -1131,6 +1355,10 @@ h1 {
     color: #777;
     font-size: 13px;
 }
+
+.category-state { float:right; font-size:13px; }
+.cat-on { color:green; }
+.cat-off { color:red; }
 
 </style>
 
@@ -1289,18 +1517,17 @@ Quantity:
 <div class="section">
 <h2>🥤 MENU STRUCTURE</h2>
 <p class="small">Tap a category to see its items.</p>
-{% for category, items in menu_status.items() %}
+{% for category, data in menu_status.items() %}
 <details class="menu-category">
-<summary>{{ category }} <span class="small">({{ items|length }} items)</span></summary>
+<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OFF' }}</span></summary>
 <div class="category-items">
-{% for item in items %}
+{% for item in data.items %}
 <div class="menu-item"><span>{{ item.name }}</span><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 CLOSED' }}</span></div>
 {% endfor %}
 </div>
 </details>
 {% endfor %}
 </div>
-
 
 <p style="text-align:center;color:#777;">
 
