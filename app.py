@@ -1,5 +1,6 @@
 from flask import Flask, render_template_string, request, redirect, session
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import sqlite3 #import
 import os
 import psycopg2
@@ -657,7 +658,7 @@ def update():
             (item, status, qty, time)
             VALUES (%s, %s, %s, %s)
         """, (ingredient, status, saved_qty,
-               datetime.now().strftime("%d-%m-%Y %I:%M:%S %p")))
+               datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%d-%m-%Y %I:%M:%S %p")))
     else:
         conn.cursor().execute("""
             UPDATE stock
@@ -670,7 +671,7 @@ def update():
             (item, status, qty, time)
             VALUES (?, ?, ?, ?)
         """, (ingredient, status, saved_qty,
-               datetime.now().strftime("%d-%m-%Y %I:%M:%S %p")))
+               datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%d-%m-%Y %I:%M:%S %p")))
 
     conn.commit()
     conn.close()
