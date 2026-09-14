@@ -317,6 +317,40 @@ def effective_item_status(category, item, dependencies, category_enabled=None, i
 
 
 # =========================
+# MENU ALERTS (MANUAL CATEGORY / ITEM CONTROLS)
+# =========================
+
+def menu_alerts():
+    """Return menu-level OUT/LIMITED alerts caused by manual controls.
+
+    Ingredient-driven alerts are already handled by affected_menu().
+    Keeping these lists focused on manual controls prevents duplicate alerts.
+    """
+    category_controls, item_controls = load_menu_controls()
+    out_alerts = []
+    limited_alerts = []
+
+    for category, items in menu.items():
+        # A category manually switched OFF is represented by the category only.
+        if not category_controls.get(category, True):
+            out_alerts.append({"category": category, "item": None})
+            continue
+
+        for item in items:
+            control = item_controls.get(
+                (category, item),
+                {"enabled": True, "manual_status": "AUTO"}
+            )
+
+            if not control.get("enabled", True):
+                out_alerts.append({"category": category, "item": item})
+            elif control.get("manual_status") == "LIMITED":
+                limited_alerts.append({"category": category, "item": item})
+
+    return out_alerts, limited_alerts
+
+
+# =========================
 # MENU STATUS
 # =========================
 
