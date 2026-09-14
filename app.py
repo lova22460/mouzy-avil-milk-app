@@ -168,16 +168,16 @@ menu = {
     "LITTLE COMBO AVIL MILK": {"Little Strawberry": ["Strawberry Ice Cream", "Strawberry"], "Little Pista": ["Pista Ice Cream"], "Little Mango": ["Mango Ice Cream", "Mango"], "Little Arabian": ["Dates Ice Cream", "Dates"], "Little Butterscotch": ["Butterscotch Ice Cream"], "Little Choco": ["Chocolate Ice Cream", "Chocolate"]},
     "FUSION AVIL MILK": {"Watermelon": ["Vanilla Ice Cream"], "Rooh Afza": ["Vanilla Ice Cream"], "Butterscotch": ["Butterscotch Ice Cream"], "Pista": ["Pista Ice Cream"], "Kiwi": ["Vanilla Ice Cream", "Kiwi"], "Chocolate": ["Chocolate Ice Cream", "Chocolate"], "Strawberry": ["Strawberry Ice Cream", "Strawberry"], "Mango": ["Mango Ice Cream", "Mango"], "Dates": ["Dates Ice Cream", "Dates"]},
     "SUPREME AVIL MILK": {"Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam"], "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam"], "Royal": ["Fruit Mix", "Mango Ice Cream", "Cashew / Nuts", "Badam"], "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry"], "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam"], "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam"], "Choco Nut": ["Chocolate Ice Cream", "Chocolate", "Cashew / Nuts", "Badam"], "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam"], "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"], "Tender Coconut": ["Tender Ice Cream", "Cashew / Nuts", "Badam"], "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam"], "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam"], "Dry Fruits": ["Mango Ice Cream", "Dry Fruits", "Cashew / Nuts", "Badam"], "Special Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"]},
-    "DIET AVIL MILK": {"Normal Diet": [], "Fruit Diet": ["Fruit Mix"], "Fruit Nut Diet": ["Fruit Mix", "Cashew / Nuts", "Badam"], "Nuts Diet": ["Cashew / Nuts", "Badam"], "Dry Fruits Diet": ["Cashew / Nuts", "Dry Fruits", "Badam"]},
-    "LIME": {"Fresh Lime": [], "Mint Lime": [], "Mexican Mint": [], "Pineapple": [], "Orange": [], "Ginger": []},
+    "DIET AVIL MIX": {"Normal Diet": [], "Fruit Diet": ["Fruit Mix"], "Fruit Nut Diet": ["Fruit Mix", "Cashew / Nuts", "Badam"], "Nuts Diet": ["Cashew / Nuts", "Badam"], "Dry Fruits Diet": ["Cashew / Nuts", "Dry Fruits", "Badam"]},
+    "CHEESEY CHIKEN": {"Chicken Club Sandwich": [], "Chicken Mini Sandwich": [], "Samoona": [], "Cheesy Chick Bake - Classic Medium": [], "Cheesy Chick Bake - Classic Large": [], "Cheesy Chick Bake - Schezwan Medium": [], "Cheesy Chick Bake - Schezwan Large": [], "Cheesy Chick Bake - BBQ Medium": [], "Cheesy Chick Bake - BBQ Large": [], "Cheesy Chick Bake - Mexican Medium": [], "Cheesy Chick Bake - Mexican Large": []},
+    "LIME": {"Fresh Lime": [], "Mexican Mint Lime": [], "Mint Lime": [], "Pineapple Lime": [], "Orange Lime": [], "Ginger Lime": []},
     "MOJITO": {"Classic Mojito": [], "Mango Mojito": [], "Grapes Mojito": [], "Passion Mojito": [], "Pineapple Mojito": [], "Strawberry Mojito": []},
     "FRUIT SHAKE": {"Banago": [], "Mangopass": [], "Chikudates": [], "Banatend": [], "Tendates": [], "Datifig": []},
-    "CHOCOLATE SHAKES": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": [], "Choco Coffee Charge": []},
     "FRESH JUICE": {"Orange": [], "Watermelon": [], "Pineapple": [], "Pappaya": [], "Muskmelon": [], "Mosambi": []},
     "FALOODA": {"Royal Banaloooda": [], "Strawberry Banaloooda": [], "Chocolate Banaloooda": [], "Mango Banaloooda": [], "Pista Banaloooda": [], "Dry Fruit Banaloooda": []},
+    "CHOCOLATE SHAKE": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": [], "Choco Coffee Charge": []},
     "DOODH MALAI": {"Mix Fruit Malai": [], "Mango Magic Malai": [], "Chocolate Malai": [], "Seetaphal Malai": [], "Kiwi Malai": []},
-    "LASSI": {"Plain Lassi": [], "Mango Lassi": [], "Chocolate Lassi": [], "Mix Fruit Lassi": [], "Dry Nuts Lassi": [], "Dry Fruit Lassi": []},
-    "CHICKEN": {"Chicken Club Sandwich": [], "Chicken Mini Sandwich": [], "Samona Hot Dog": [], "Cheesy Chick Bake - Classic Medium": [], "Cheesy Chick Bake - Classic Large": [], "Cheesy Chick Bake - Schezwan Medium": [], "Cheesy Chick Bake - Schezwan Large": [], "Cheesy Chick Bake - BBQ Medium": [], "Cheesy Chick Bake - BBQ Large": [], "Cheesy Chick Bake - Mexican Medium": [], "Cheesy Chick Bake - Mexican Large": []}
+    "LASSI": {"Plain Lassi": [], "Mango Lassi": [], "Chocolate Lassi": [], "Mix Fruit Lassi": [], "Dry Nuts Lassi": [], "Dry Fruit Lassi": []}
 }
 
 
@@ -202,6 +202,7 @@ def init_menu_controls():
                 category TEXT NOT NULL,
                 item TEXT NOT NULL,
                 enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                manual_status TEXT NOT NULL DEFAULT 'AUTO',
                 PRIMARY KEY (category, item)
             )
         """)
@@ -214,8 +215,8 @@ def init_menu_controls():
             """, (category,))
             for item in items:
                 cur.execute("""
-                    INSERT INTO item_controls (category, item, enabled)
-                    VALUES (%s, %s, TRUE)
+                    INSERT INTO item_controls (category, item, enabled, manual_status)
+                    VALUES (%s, %s, TRUE, 'AUTO')
                     ON CONFLICT (category, item) DO NOTHING
                 """, (category, item))
     else:
@@ -230,6 +231,7 @@ def init_menu_controls():
                 category TEXT NOT NULL,
                 item TEXT NOT NULL,
                 enabled INTEGER NOT NULL DEFAULT 1,
+                manual_status TEXT NOT NULL DEFAULT 'AUTO',
                 PRIMARY KEY (category, item)
             )
         """)
@@ -241,9 +243,19 @@ def init_menu_controls():
             """, (category,))
             for item in items:
                 cur.execute("""
-                    INSERT OR IGNORE INTO item_controls (category, item, enabled)
-                    VALUES (?, ?, 1)
+                    INSERT OR IGNORE INTO item_controls (category, item, enabled, manual_status)
+                    VALUES (?, ?, 1, 'AUTO')
                 """, (category, item))
+
+    if DATABASE_URL:
+        cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'item_controls' AND column_name = 'manual_status'")
+        if cur.fetchone() is None:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
+    else:
+        cur.execute("PRAGMA table_info(item_controls)")
+        cols = [r[1] for r in cur.fetchall()]
+        if "manual_status" not in cols:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
 
     conn.commit()
     cur.close()
@@ -255,28 +267,40 @@ def load_menu_controls():
     cur = conn.cursor()
     cur.execute("SELECT category, enabled FROM category_controls")
     category_rows = cur.fetchall()
-    cur.execute("SELECT category, item, enabled FROM item_controls")
+    cur.execute("SELECT category, item, enabled, manual_status FROM item_controls")
     item_rows = cur.fetchall()
     cur.close()
     conn.close()
 
     categories = {row["category"]: bool(row["enabled"]) for row in category_rows}
-    items = {(row["category"], row["item"]): bool(row["enabled"]) for row in item_rows}
+    items = {(row["category"], row["item"]): {"enabled": bool(row["enabled"]), "manual_status": row["manual_status"]} for row in item_rows}
     return categories, items
 
 
 init_menu_controls()
 
 
-def effective_item_status(category, item, dependencies):
-    """Final menu status: manual OFF first, then category/dependency rules."""
-    category_enabled, item_enabled = load_menu_controls()
+def effective_item_status(category, item, dependencies, category_enabled=None, item_control=None):
+    """Calculate menu status without repeatedly opening the database."""
+    if category_enabled is None or item_control is None:
+        category_controls, item_controls = load_menu_controls()
+        category_enabled = category_controls.get(category, True)
+        item_control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
 
-    if not category_enabled.get(category, True):
+    if not category_enabled:
         return "CLOSED"
 
-    if not item_enabled.get((category, item), True):
+    if isinstance(item_control, bool):
+        item_control = {"enabled": item_control, "manual_status": "AUTO"}
+
+    if not item_control.get("enabled", True):
         return "CLOSED"
+
+    if item_control.get("manual_status") == "LIMITED":
+        for ingredient in dependencies:
+            if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
+                return "CLOSED"
+        return "LIMITED"
 
     for ingredient in dependencies:
         if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
@@ -287,51 +311,49 @@ def effective_item_status(category, item, dependencies):
             return "LIMITED"
 
     return "AVAILABLE"
-
 
 
 # =========================
 # MENU STATUS
 # =========================
 
-def item_status(dependencies, category=None, item=None):
-    # Backward-compatible wrapper used by dependency display.
+def item_status(dependencies, category=None, item=None, category_enabled=None, item_control=None):
     if category is not None and item is not None:
-        return effective_item_status(category, item, dependencies)
+        return effective_item_status(category, item, dependencies, category_enabled, item_control)
 
     for ingredient in dependencies:
         if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
             return "CLOSED"
-
     for ingredient in dependencies:
         if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "LIMITED":
             return "LIMITED"
-
     return "AVAILABLE"
-
 
 
 # =========================
 # AFFECTED MENU
 # =========================
 
-def affected_menu(ingredient):
+def affected_menu(ingredient, category_controls=None, item_controls=None):
+    if category_controls is None or item_controls is None:
+        category_controls, item_controls = load_menu_controls()
 
     result = []
-
     for category, items in menu.items():
-
         for item, dependencies in items.items():
-
             if ingredient in dependencies:
-
+                control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
                 result.append({
                     "category": category,
                     "item": item,
-                    "status": item_status(dependencies, category, item)
+                    "status": item_status(
+                        dependencies, category, item,
+                        category_controls.get(category, True), control
+                    )
                 })
-
     return result
+
+
 
 
 # KITCHEN LOGIN 
@@ -559,40 +581,42 @@ def history():
 
 
 
+@app.route("/staff-live")
+def staff_live():
+    out_items=[]; limited_items=[]
+    category_controls,item_controls=load_menu_controls()
+    for ingredient in MAIN_INGREDIENTS:
+        data=stock[ingredient]
+        if data["status"]=="OUT": out_items.append({"name":ingredient,"affected":affected_menu(ingredient,category_controls,item_controls)})
+        elif data["status"]=="LIMITED": limited_items.append({"name":ingredient,"qty":data["qty"],"affected":affected_menu(ingredient,category_controls,item_controls)})
+    menu_out_alerts,menu_limited_alerts=menu_alerts()
+    menu_status={}
+    for category,items in menu.items():
+        menu_status[category]={"enabled":category_controls.get(category,True),"items":[]}
+        for item,deps in items.items():
+            ctrl=item_controls.get((category,item),{"enabled":True,"manual_status":"AUTO"})
+            menu_status[category]["items"].append({"name":item,"status":item_status(deps,category,item,category_controls.get(category,True),ctrl),"enabled":ctrl.get("enabled",True),"manual_status":ctrl.get("manual_status","AUTO")})
+    return render_template_string(STAFF_LIVE_HTML,out_items=out_items,limited_items=limited_items,menu_status=menu_status,menu_out_alerts=menu_out_alerts,menu_limited_alerts=menu_limited_alerts)
+
+
 @app.route("/staff")
 def staff():
 
     out_items = []
     limited_items = []
     available_main = []
+    category_controls, item_controls = load_menu_controls()
 
     for ingredient in MAIN_INGREDIENTS:
-
         data = stock[ingredient]
-
         if data["status"] == "OUT":
-
-            out_items.append({
-                "name": ingredient,
-                "affected": affected_menu(ingredient)
-            })
-
+            out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls)})
         elif data["status"] == "LIMITED":
-
-            limited_items.append({
-                "name": ingredient,
-                "qty": data["qty"],
-                "affected": affected_menu(ingredient)
-            })
-
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
         else:
+            available_main.append({"name": ingredient})
 
-            available_main.append({
-                "name": ingredient
-            })
-
-
-    category_controls, item_controls = load_menu_controls()
+    menu_out_alerts, menu_limited_alerts = menu_alerts()
     menu_status = {}
 
     for category, items in menu.items():
@@ -604,10 +628,12 @@ def staff():
 
         for item, dependencies in items.items():
 
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
             menu_status[category]["items"].append({
                 "name": item,
-                "status": item_status(dependencies, category, item),
-                "enabled": item_controls.get((category, item), True)
+                "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
+                "enabled": item_controls.get((category, item), {"enabled": True}).get("enabled", True),
+                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO")
             })
 
     conn = get_db()
@@ -630,6 +656,8 @@ def staff():
         limited_items=limited_items,
         available_main=available_main,
         menu_status=menu_status,
+        menu_out_alerts=menu_out_alerts,
+        menu_limited_alerts=menu_limited_alerts,
         history=latest_history
     )
 
@@ -667,35 +695,22 @@ def toggle_category():
 def toggle_item():
     if not session.get("kitchen"):
         return redirect("/login")
-
     category = request.form.get("category", "")
     item = request.form.get("item", "")
-    action = request.form.get("action", "OFF")
-    enabled = action == "ON"
-
+    action = request.form.get("action", "ON").upper()
     if category not in menu or item not in menu[category]:
         return redirect("/")
-
-    conn = get_db()
-    cur = conn.cursor()
+    if action not in {"ON", "OFF", "LIMITED"}:
+        action = "ON"
+    enabled = action != "OFF"
+    manual_status = "AUTO" if action == "ON" else action
+    conn = get_db(); cur = conn.cursor()
     if DATABASE_URL:
-        cur.execute("""
-            UPDATE item_controls
-            SET enabled = %s
-            WHERE category = %s AND item = %s
-        """, (enabled, category, item))
+        cur.execute("UPDATE item_controls SET enabled = %s, manual_status = %s WHERE category = %s AND item = %s", (enabled, manual_status, category, item))
     else:
-        cur.execute("""
-            UPDATE item_controls
-            SET enabled = ?
-            WHERE category = ? AND item = ?
-        """, (1 if enabled else 0, category, item))
-    conn.commit()
-    cur.close()
-    conn.close()
-
+        cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, category, item))
+    conn.commit(); cur.close(); conn.close()
     return redirect("/")
-
 
 # =========================
 # UPDATE STOCK
@@ -752,6 +767,47 @@ def update():
 
 
 # =========================
+# LIVE KITCHEN DATA
+# =========================
+
+@app.route("/live")
+def live():
+    if not session.get("kitchen"):
+        return "", 401
+
+    out_items = []
+    limited_items = []
+    available_main = []
+    category_controls, item_controls = load_menu_controls()
+    for ingredient in MAIN_INGREDIENTS:
+        data = stock[ingredient]
+        if data["status"] == "OUT":
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+        elif data["status"] == "LIMITED":
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+        else:
+            available_main.append({"name": ingredient})
+
+    menu_out_alerts, menu_limited_alerts = menu_alerts()
+    menu_status = {}
+    for category, items in menu.items():
+        menu_status[category] = {"enabled": category_controls.get(category, True), "items": []}
+        for item, dependencies in items.items():
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+            menu_status[category]["items"].append({
+                "name": item,
+                "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
+                "enabled": ctrl.get("enabled", True),
+                "manual_status": ctrl.get("manual_status", "AUTO")
+            })
+
+    return render_template_string(KITCHEN_LIVE_HTML,
+        out_items=out_items, limited_items=limited_items, available_main=available_main,
+        menu_status=menu_status, menu_out_alerts=menu_out_alerts,
+        menu_limited_alerts=menu_limited_alerts)
+
+
+# =========================
 # HOME
 # =========================
 
@@ -764,35 +820,18 @@ def home():
     out_items = []
     limited_items = []
     available_main = []
+    category_controls, item_controls = load_menu_controls()
 
     for ingredient in MAIN_INGREDIENTS:
-
         data = stock[ingredient]
-
         if data["status"] == "OUT":
-
-            out_items.append({
-                "name": ingredient,
-                "qty": data["qty"],
-                "affected": affected_menu(ingredient)
-            })
-
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
         elif data["status"] == "LIMITED":
-
-            limited_items.append({
-                "name": ingredient,
-                "qty": data["qty"],
-                "affected": affected_menu(ingredient)
-            })
-
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
         else:
+            available_main.append({"name": ingredient})
 
-            available_main.append({
-                "name": ingredient
-            })
-
-
-    category_controls, item_controls = load_menu_controls()
+    menu_out_alerts, menu_limited_alerts = menu_alerts()
     menu_status = {}
 
     for category, items in menu.items():
@@ -804,10 +843,12 @@ def home():
 
         for item, dependencies in items.items():
 
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
             menu_status[category]["items"].append({
                 "name": item,
-                "status": item_status(dependencies, category, item),
-                "enabled": item_controls.get((category, item), True)
+                "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
+                "enabled": item_controls.get((category, item), {"enabled": True}).get("enabled", True),
+                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO")
             })
 
 
@@ -816,7 +857,9 @@ def home():
         out_items=out_items,
         limited_items=limited_items,
         available_main=available_main,
-        menu_status=menu_status
+        menu_status=menu_status,
+        menu_out_alerts=menu_out_alerts,
+        menu_limited_alerts=menu_limited_alerts
     )
 
 
@@ -825,725 +868,148 @@ def home():
 # ==================================================
 
 HTML = """
-
 <!DOCTYPE html>
-
 <html>
-
 <head>
 <link rel="manifest" href="/static/manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>MOUZY BANANA AVIL MILK</title>
-
 <style>
-
-body {
-    font-family: Arial, sans-serif;
-    background: #f3f5f7;
-    margin: 0;
-    padding: 15px;
-}
-
-h1 {
-    text-align: center;
-}
-
-.section {
-    background: white;
-    padding: 15px;
-    margin-bottom: 18px;
-    border-radius: 15px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-}
-
-.card {
-    background: #f8f8f8;
-    padding: 12px;
-    margin: 10px 0;
-    border-radius: 10px;
-}
-
-.available {
-    border-left: 6px solid green;
-}
-
-.out {
-    border-left: 6px solid red;
-}
-
-.limited {
-    border-left: 6px solid orange;
-}
-
-button {
-    border: none;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin: 5px 3px;
-    font-weight: bold;
-}
-
-.out-btn {
-    background: #dc3545;
-    color: white;
-}
-
-.limited-btn {
-    background: #ffc107;
-    color: black;
-}
-
-.back-btn {
-    background: #28a745;
-    color: white;
-}
-
-input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 7px;
-    width: 110px;
-}
-
-.menu-category {
-    background: #f8f8f8;
-    margin: 10px 0;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid #eee;
-}
-.menu-category summary {
-    cursor: pointer;
-    padding: 15px;
-    font-weight: bold;
-    font-size: 17px;
-    list-style: none;
-}
-.menu-category summary::-webkit-details-marker { display:none; }
-.menu-category summary::after { content: " ▼"; float:right; }
-.menu-category[open] summary::after { content: " ▲"; }
-.category-items { padding: 0 12px 8px; }
-
-.menu-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 9px 3px;
-    border-bottom: 1px solid #eee;
-}
-
-.green {
-    color: green;
-    font-weight: bold;
-}
-
-.yellow {
-    color: #e69500;
-    font-weight: bold;
-}
-
-.red {
-    color: red;
-    font-weight: bold;
-}
-
-.small {
-    color: #777;
-    font-size: 13px;
-}
-
-.category-state {
-    float: right;
-    font-size: 13px;
-}
-.cat-on { color: green; }
-.cat-off { color: red; }
-.control-row {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-}
-.category-off-btn, .category-on-btn, .item-off-btn, .item-on-btn {
-    color: white;
-    border: none;
-    border-radius: 7px;
-    padding: 7px 10px;
-    font-weight: bold;
-}
-.category-off-btn, .item-off-btn { background: #dc3545; }
-.category-on-btn, .item-on-btn { background: #28a745; }
-.item-off-btn, .item-on-btn {
-    padding: 4px 7px;
-    font-size: 11px;
-}
-
+body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}
+h1{text-align:center}
+.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}
+.available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}
+button{border:none;padding:8px 12px;border-radius:8px;margin:4px 2px;font-weight:bold;cursor:pointer}
+.out-btn{background:#dc3545;color:white}.limited-btn{background:#ffc107;color:#111}.back-btn{background:#28a745;color:white}
+input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
+.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}
+.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}
+.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}
+.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 3px;border-bottom:1px solid #eee}
+.green{color:green;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.red{color:red;font-weight:bold}.small{color:#777;font-size:13px}
+.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+.control-row{padding:8px 0;border-bottom:1px solid #eee}.item-controls{white-space:nowrap;text-align:right}
+.category-off-btn,.category-on-btn,.item-off-btn,.item-on-btn,.item-limited-btn{color:white;border:none;border-radius:7px;padding:7px 10px;font-weight:bold}
+.category-off-btn,.item-off-btn{background:#dc3545}.category-on-btn,.item-on-btn{background:#28a745}.item-limited-btn{background:#ffc107;color:#111!important}
+.item-off-btn,.item-on-btn,.item-limited-btn{padding:5px 7px;font-size:11px}
+@media(max-width:650px){.menu-item{align-items:flex-start;flex-direction:column}.item-controls{text-align:left}}
 </style>
-
 </head>
-
-
 <body>
-
 <h1>🥤 MOUZY BANANA AVIL MILK</h1>
-
-<div style="text-align:center; margin-bottom:15px;">
-    <a href="/history"
-       style="
-       display:inline-block;
-       background:#343a40;
-       color:white;
-       padding:10px 18px;
-       border-radius:8px;
-       text-decoration:none;
-       font-weight:bold;
-       ">
-       📋 STOCK HISTORY
-    </a>
+<div style="text-align:center;margin-bottom:15px">
+<a href="/history" style="display:inline-block;background:#343a40;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">📋 STOCK HISTORY</a>
+<a href="/logout" style="display:inline-block;background:#dc3545;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;margin-left:6px">🔒 LOGOUT</a>
 </div>
-
-<div style="text-align:center; margin-bottom:15px;">
-
-<a href="/logout"
-   style="
-   display:inline-block;
-   background:#dc3545;
-   color:white;
-   padding:10px 18px;
-   border-radius:8px;
-   text-decoration:none;
-   font-weight:bold;
-   ">
-   🔒 BAND KARO HAAT JODKAR BINTI KARTA HUU🙏
-</a>
-
-</div>
-
-
-<!-- OUT OF STOCK -->
-
-<div class="section">
-
-<h2>🔴 OUT OF STOCK</h2>
-
-{% if out_items %}
-
-{% for x in out_items %}
-
-<div class="card out">
-
-<b>❌ {{ x.name }}</b>
-
-<br>
-
-<form method="POST" action="/update">
-
-<input type="hidden"
-       name="ingredient"
-       value="{{ x.name }}">
-
-<input type="hidden"
-       name="status"
-       value="AVAILABLE">
-
-<button class="back-btn">
-↩️ BACK IN STOCK
-</button>
-
-</form>
-
-
-{% if x.affected %}
-
-<br>
-
-<b>Closed Menu:</b>
-
-{% for item in x.affected %}
-
-{% if item.status == "CLOSED" %}
-
-<div>
-🔴 {{ item.item }}
-<span class="small">
-({{ item.category }})
-</span>
-</div>
-
-{% endif %}
-
-{% endfor %}
-
-{% endif %}
-
-</div>
-
-{% endfor %}
-
-{% else %}
-
-<p>✅ No main ingredient is OUT.</p>
-
-{% endif %}
-
-</div>
-
-
-<!-- LIMITED -->
-
-<div class="section">
-
-<h2>🟡 LIMITED</h2>
-
-{% if limited_items %}
-
-{% for x in limited_items %}
-
-<div class="card limited">
-
-<b>⚠️ {{ x.name }}</b>
-
-{% if x.qty %}
-
-<div>
-Quantity: <b>{{ x.qty }}</b>
-</div>
-
-{% endif %}
-
-<br>
-
-<form method="POST" action="/update">
-
-<input type="hidden"
-       name="ingredient"
-       value="{{ x.name }}">
-
-<input type="hidden"
-       name="status"
-       value="AVAILABLE">
-
-<button class="back-btn">
-↩️ BACK IN STOCK
-</button>
-
-</form>
-
-
-{% if x.affected %}
-
-<br>
-
-<b>Limited Menu:</b>
-
-{% for item in x.affected %}
-
-{% if item.status == "LIMITED" %}
-
-<div>
-🟡 {{ item.item }}
-<span class="small">
-({{ item.category }})
-</span>
-</div>
-
-{% endif %}
-
-{% endfor %}
-
-{% endif %}
-
-</div>
-
-{% endfor %}
-
-{% else %}
-
-<p>✅ No main ingredient is LIMITED.</p>
-
-{% endif %}
-
-</div>
-
-
-<!-- AVAILABLE -->
-
-<div class="section">
-
-<h2>🟢 AVAILABLE</h2>
-
-<h3>Main Ingredients</h3>
-
-{% for x in available_main %}
-
-<div class="card available">
-
-<b>🟢 {{ x.name }}</b>
-
-<br>
-
-<form method="POST"
-      action="/update"
-      style="display:inline;">
-
-<input type="hidden"
-       name="ingredient"
-       value="{{ x.name }}">
-
-<input type="hidden"
-       name="status"
-       value="OUT">
-
-<button class="out-btn">
-🔴 OUT
-</button>
-
-</form>
-
-
-<form method="POST"
-      action="/update"
-      style="display:inline;">
-
-<input type="hidden"
-       name="ingredient"
-       value="{{ x.name }}">
-
-<input type="hidden"
-       name="status"
-       value="LIMITED">
-
-<input type="text"
-       name="qty"
-       placeholder="Qty">
-
-<button class="limited-btn">
-🟡 LIMITED
-</button>
-
-</form>
-
-</div>
-
-{% endfor %}
-
-</div>
-
-
-<!-- MENU STATUS -->
-<div class="section">
-<h2>🥤 MENU STRUCTURE</h2>
-<p class="small">All categories are closed by default. Tap a category to expand.</p>
-{% for category, data in menu_status.items() %}
-<details class="menu-category">
-<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OFF' }}</span></summary>
-<div class="category-items">
-<div class="control-row">
-<form method="POST" action="/toggle-category">
-<input type="hidden" name="category" value="{{ category }}">
-<input type="hidden" name="action" value="{{ 'OFF' if data.enabled else 'ON' }}">
-<button class="{{ 'category-off-btn' if data.enabled else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data.enabled else '🟢 TURN CATEGORY ON' }}</button>
-</form>
-</div>
-{% for item in data["items"] %}
-<div class="menu-item">
-<span>{{ item["name"] }}</span>
-<span>
-<span class="{{ 'green' if item['status'] == 'AVAILABLE' else 'yellow' if item['status'] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item['status'] == 'AVAILABLE' else '🟡 LIMITED' if item['status'] == 'LIMITED' else '🔴 CLOSED' }}</span>
-<form method="POST" action="/toggle-item" style="display:inline; margin-left:8px;">
-<input type="hidden" name="category" value="{{ category }}">
-<input type="hidden" name="item" value="{{ item['name'] }}">
-<input type="hidden" name="action" value="{{ 'OFF' if item['enabled'] else 'ON' }}">
-<button class="{{ 'item-off-btn' if item['enabled'] else 'item-on-btn' }}">{{ 'OFF' if item['enabled'] else 'ON' }}</button>
-</form>
-</span>
-</div>
-{% endfor %}
-</div>
-</details>
-{% endfor %}
-</div>
-
-
+<div id="kitchen-live-root">Loading...</div>
+<script>
+async function refreshKitchen(){
+  try{
+    const r=await fetch('/live',{cache:'no-store'}); if(!r.ok)return;
+    const root=document.getElementById('kitchen-live-root');
+    const open=Array.from(root.querySelectorAll('details[open]')).map(d=>d.dataset.category);
+    root.innerHTML=await r.text();
+    open.forEach(cat=>{const d=root.querySelector('details[data-category="'+CSS.escape(cat)+'"]');if(d)d.open=true;});
+  }catch(e){}
+}
+document.getElementById('kitchen-live-root').addEventListener('submit',async e=>{
+  const form=e.target.closest('form'); if(!form)return;
+  e.preventDefault();
+  const button=form.querySelector('button'); if(button)button.disabled=true;
+  try{await fetch(form.action,{method:'POST',body:new FormData(form),cache:'no-store'});await refreshKitchen();}catch(err){await refreshKitchen();}
+});
+refreshKitchen();setInterval(refreshKitchen,1000);
+</script>
 </body>
-
 </html>
-
 """
 
-
-# ==================================================
-# STAFF HTML
-# ==================================================
-
-STAFF_HTML = """
-
-<!DOCTYPE html>
-
-<html>
-
-<head>
-<link rel="manifest" href="/static/manifest.json">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
-
-<meta http-equiv="refresh" content="1">
-
-<title>Mouzy Edappally Staff View</title>
-
-<meta name="viewport"
-      content="width=device-width, initial-scale=1">
-
-<title>Mouzy Edappally Staff View</title>
-
-<style>
-
-body {
-    font-family: Arial, sans-serif;
-    background: #f3f5f7;
-    margin: 0;
-    padding: 15px;
-}
-
-h1 {
-    text-align: center;
-}
-
-.section {
-    background: white;
-    padding: 15px;
-    margin-bottom: 18px;
-    border-radius: 15px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-}
-
-.card {
-    background: #f8f8f8;
-    padding: 12px;
-    margin: 10px 0;
-    border-radius: 10px;
-}
-
-.menu-category { background:#f8f8f8; margin:10px 0; border-radius:12px; overflow:hidden; border:1px solid #eee; }
-.menu-category summary { cursor:pointer; padding:15px; font-weight:bold; font-size:17px; list-style:none; }
-.menu-category summary::-webkit-details-marker { display:none; }
-.menu-category summary::after { content:" ▼"; float:right; }
-.menu-category[open] summary::after { content:" ▲"; }
-.category-items { padding:0 12px 8px; }
-
-.menu-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 3px;
-    border-bottom: 1px solid #eee;
-}
-
-.green {
-    color: green;
-    font-weight: bold;
-}
-
-.yellow {
-    color: #e69500;
-    font-weight: bold;
-}
-
-.red {
-    color: red;
-    font-weight: bold;
-}
-
-.small {
-    color: #777;
-    font-size: 13px;
-}
-
-.category-state { float:right; font-size:13px; }
-.cat-on { color:green; }
-.cat-off { color:red; }
-
-</style>
-
-</head>
-
-
-<body>
-
-<div style="
-    background:#fff3cd;
-    padding:15px;
-    margin-bottom:15px;
-    border-radius:10px;
-    border:2px solid #ffc107;
-">
-    <b>🔔 LATEST STOCK UPDATE</b><br>
-
-    {% if history %}
-        <b>{{ history[-1].item }}</b>
-        → {{ history[-1].status }}
-
-        {% if history[-1].qty %}
-        | Qty: {{ history[-1].qty }}
-        {% endif %}
-
-        <br>
-        🕐 {{ history[-1].time }}
-    {% else %}
-        No new stock update.
-    {% endif %}
-</div>
-
-<h1>🥤 MOUZY EDAPPALLY STAFF VIEW</h1>
-
-
-<!-- OUT -->
+KITCHEN_LIVE_HTML = """
 
 <div class="section">
-
-<h2 class="red">
-🔴 OUT OF STOCK
-</h2>
-
+<h2>🔴 OUT OF STOCK</h2>
 {% if out_items %}
-
-{% for x in out_items %}
-
-<div class="card">
-
-<b>❌ {{ x.name }}</b>
-
-{% if x.affected %}
-
-<br><br>
-
-<b>Closed Menu:</b>
-
-{% for item in x.affected %}
-
-{% if item.status == "CLOSED" %}
-
-<div>
-
-🔴 {{ item.item }}
-
-<span class="small">
-({{ item.category }})
-</span>
-
+{% for x in out_items %}<div class="card out"><b>❌ {{ x.name }}</b>{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "CLOSED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% else %}<p>✅ No main ingredient is OUT.</p>{% endif %}
+{% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a.category }}{% if a.item %} → {{ a.item }}{% endif %}</b></div>{% endfor %}
 </div>
-
-{% endif %}
-
-{% endfor %}
-
-{% endif %}
-
-</div>
-
-{% endfor %}
-
-{% else %}
-
-<p>✅ Nothing is OUT.</p>
-
-{% endif %}
-
-</div>
-
-
-<!-- LIMITED -->
 
 <div class="section">
-
-<h2 class="yellow">
-🟡 LIMITED
-</h2>
-
+<h2>🟡 LIMITED</h2>
 {% if limited_items %}
-
-{% for x in limited_items %}
-
-<div class="card">
-
-<b>⚠️ {{ x.name }}</b>
-
-{% if x.qty %}
-
-<br>
-
-Quantity:
-<b>{{ x.qty }}</b>
-
-{% endif %}
-
-{% if x.affected %}
-
-<br><br>
-
-<b>Limited Menu:</b>
-
-{% for item in x.affected %}
-
-{% if item.status == "LIMITED" %}
-
-<div>
-
-🟡 {{ item.item }}
-
-<span class="small">
-({{ item.category }})
-</span>
-
+{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x.name }}</b>{% if x.qty %} | Quantity: <b>{{ x.qty }}</b>{% endif %}{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "LIMITED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% else %}<p>✅ No main ingredient is LIMITED.</p>{% endif %}
+{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a.category }} → {{ a.item }}</b></div>{% endfor %}
 </div>
 
-{% endif %}
-
-{% endfor %}
-
-{% endif %}
-
+<div class="section">
+<h2>🟢 AVAILABLE</h2>
+{% for x in available_main %}<div class="card available"><b>🟢 {{ x.name }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x.name }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x.name }}"><input type="hidden" name="status" value="LIMITED"><input type="text" name="qty" placeholder="Qty"><button class="limited-btn">🟡 LIMITED</button></form></div>{% endfor %}
 </div>
 
-{% endfor %}
-
-{% else %}
-
-<p>✅ Nothing is LIMITED.</p>
-
-{% endif %}
-
-</div>
-
-
-<!-- MENU STATUS -->
 <div class="section">
 <h2>🥤 MENU STRUCTURE</h2>
-<p class="small">Tap a category to see its items.</p>
-{% for category, data in menu_status.items() %}
-<details class="menu-category">
-<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OFF' }}</span></summary>
+<p class="small">All categories are collapsed by default. Changes update live every 1 second.</p>
+{% for category,data in menu_status.items() %}
+<details class="menu-category" data-category="{{ category }}">
+<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OUT OF STOCK' }}</span></summary>
 <div class="category-items">
-{% for item in data["items"] %}
-<div class="menu-item"><span>{{ item["name"] }}</span><span class="{{ 'green' if item['status'] == 'AVAILABLE' else 'yellow' if item['status'] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item['status'] == 'AVAILABLE' else '🟡 LIMITED' if item['status'] == 'LIMITED' else '🔴 CLOSED' }}</span></div>
+<div class="control-row"><form method="POST" action="/toggle-category"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data.enabled else 'ON' }}"><button class="{{ 'category-off-btn' if data.enabled else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data.enabled else '🟢 TURN CATEGORY ON' }}</button></form></div>
+{% for item in data.items %}
+<div class="menu-item">
+<div><b>{{ item.name }}</b><br><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
+<div class="item-controls">
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="OFF"><button class="item-off-btn">🔴 OFF</button></form>
+</div></div>
+{% endfor %}
+</div></details>
 {% endfor %}
 </div>
-</details>
-{% endfor %}
-</div>
 
-<p style="text-align:center;color:#777;">
+"""
+STAFF_HTML = """
+<!DOCTYPE html>
+<html><head>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mouzy Edappally Staff View</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+</style></head><body>
+<h1 style="text-align:center">🥤 MOUZY EDAPPALLY STAFF VIEW</h1>
+<div style="text-align:center;margin-bottom:12px"><b>⚡ LIVE STAFF VIEW</b><br><span class="small">Updates every 1 second. Open menu categories stay open.</span></div>
+<div id="staff-live-root">Loading...</div>
+<p style="text-align:center;color:#777">👀 Staff View — Only View<br>⚡ Live update — no page refresh needed</p>
+<script>
+async function refreshStaff(){
+ try{
+  const r=await fetch('/staff-live',{cache:'no-store'});if(!r.ok)return;
+  const root=document.getElementById('staff-live-root');
+  const open=Array.from(root.querySelectorAll('details[open]')).map(d=>d.dataset.category);
+  root.innerHTML=await r.text();
+  open.forEach(cat=>{const d=root.querySelector('details[data-category="'+CSS.escape(cat)+'"]');if(d)d.open=true;});
+ }catch(e){}
+}
+refreshStaff();setInterval(refreshStaff,1000);
+</script></body></html>
+"""
 
-👀 Staff View — Only View
+STAFF_LIVE_HTML = """
+<div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
+{% if out_items %}{% for x in out_items %}<div class="card"><b>❌ {{ x.name }}</b>{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "CLOSED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}
+{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a.category }}{% if a.item %} → {{ a.item }}{% endif %}</b></div>{% endfor %}</div>
 
-<br>
+<div class="section"><h2 class="yellow">🟡 LIMITED</h2>
+{% if limited_items %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x.name }}</b>{% if x.qty %} | Quantity: <b>{{ x.qty }}</b>{% endif %}{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "LIMITED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}
+{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a.category }} → {{ a.item }}</b></div>{% endfor %}</div>
 
-🔄 Refresh page to see latest status
-
-</p>
-
-
-</body>
-
-</html>
-
+<div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
+{% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
+{% for item in data.items %}<div class="menu-item"><span><b>{{ item.name }}</b></span><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
+</div></details>{% endfor %}</div>
 """
 
 
