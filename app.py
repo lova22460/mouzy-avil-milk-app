@@ -941,7 +941,9 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 </div>
 <div id="kitchen-live-root">Loading...</div>
 <script>
+let kitchenEditing=false;
 async function refreshKitchen(){
+  if(kitchenEditing)return;
   try{
     const r=await fetch('/live',{cache:'no-store'}); if(!r.ok)return;
     const root=document.getElementById('kitchen-live-root');
@@ -950,7 +952,16 @@ async function refreshKitchen(){
     open.forEach(cat=>{const d=root.querySelector('details[data-category="'+CSS.escape(cat)+'"]');if(d)d.open=true;});
   }catch(e){}
 }
-document.getElementById('kitchen-live-root').addEventListener('submit',async e=>{
+const kitchenRoot=document.getElementById('kitchen-live-root');
+kitchenRoot.addEventListener('focusin',e=>{
+  if(e.target.matches('input,select,textarea')) kitchenEditing=true;
+});
+kitchenRoot.addEventListener('focusout',e=>{
+  if(e.target.matches('input,select,textarea')) setTimeout(()=>{
+    if(!kitchenRoot.querySelector('input:focus,select:focus,textarea:focus')) kitchenEditing=false;
+  },150);
+});
+kitchenRoot.addEventListener('submit',async e=>{
   const form=e.target.closest('form'); if(!form)return;
   e.preventDefault();
   const button=form.querySelector('button'); if(button)button.disabled=true;
@@ -966,18 +977,18 @@ KITCHEN_LIVE_HTML = """
 
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
-{% if out_items %}
+{% if out_items or menu_out_alerts %}
 {% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
-{% else %}<p>✅ No main ingredient is OUT.</p>{% endif %}
 {% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}
+{% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
 </div>
 
 <div class="section">
 <h2>🟡 LIMITED</h2>
-{% if limited_items %}
+{% if limited_items or menu_limited_alerts %}
 {% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
-{% else %}<p>✅ No main ingredient is LIMITED.</p>{% endif %}
 {% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}
+{% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
 
 <div class="section">
@@ -1036,12 +1047,10 @@ refreshStaff();setInterval(refreshStaff,1000);
 
 STAFF_LIVE_HTML = """
 <div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
-{% if out_items %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}
-{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}</div>
+{% if out_items or menu_out_alerts %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}</div>
 
 <div class="section"><h2 class="yellow">🟡 LIMITED</h2>
-{% if limited_items %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}
-{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}</div>
+{% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
 {% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
