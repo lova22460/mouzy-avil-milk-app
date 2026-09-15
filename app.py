@@ -641,8 +641,12 @@ def staff_live():
     category_controls,item_controls=load_menu_controls()
     for ingredient in MAIN_INGREDIENTS:
         data=stock[ingredient]
-        if data["status"]=="OUT": out_items.append({"name":ingredient,"affected":affected_menu(ingredient,category_controls,item_controls)})
-        elif data["status"]=="LIMITED": limited_items.append({"name":ingredient,"qty":data["qty"],"affected":affected_menu(ingredient,category_controls,item_controls)})
+        if data["status"]=="OUT":
+            out_items.append({"name":ingredient,"affected":affected_menu(ingredient,category_controls,item_controls),"affected_groups":group_affected_menu(affected_menu(ingredient,category_controls,item_controls),"CLOSED")})
+        elif data["status"]=="LIMITED":
+            try: live_qty=int(data.get("qty") or 1)
+            except (TypeError,ValueError): live_qty=1
+            limited_items.append({"name":ingredient,"qty":live_qty,"affected":affected_menu(ingredient,category_controls,item_controls),"affected_groups":group_affected_menu(affected_menu(ingredient,category_controls,item_controls),"LIMITED")})
     menu_out_alerts,menu_limited_alerts=menu_alerts()
     menu_status={}
     for category,items in menu.items():
@@ -666,7 +670,9 @@ def staff():
         if data["status"] == "OUT":
             out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
         elif data["status"] == "LIMITED":
-            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
+            try: staff_qty=int(data.get("qty") or 1)
+            except (TypeError,ValueError): staff_qty=1
+            limited_items.append({"name": ingredient, "qty": staff_qty, "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
             available_main.append({"name": ingredient})
 
@@ -777,8 +783,21 @@ def update():
         return redirect("/login")
 
     ingredient = request.form["ingredient"]
-    status = request.form["status"]
-    qty = request.form.get("qty", "")
+    status = request.form["status"].upper()
+    qty = request.form.get("qty", "").strip()
+
+    # LIMITED quantity is integer-based. 0 automatically becomes OUT.
+    if status == "LIMITED":
+        try: qty_value = int(qty)
+        except (TypeError,ValueError): qty_value = 1
+        if qty_value <= 0:
+            status, qty = "OUT", ""
+        else:
+            qty = str(qty_value)
+    elif status in {"AVAILABLE", "OUT"}:
+        qty = ""
+    else:
+        status, qty = "AVAILABLE", ""
 
     # Save stock status to database
     conn = get_db()
@@ -935,7 +954,7 @@ h1{text-align:center}
 .card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}
 .available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}
 button{border:none;padding:8px 12px;border-radius:8px;margin:4px 2px;font-weight:bold;cursor:pointer}
-.out-btn{background:#dc3545;color:white}.limited-btn{background:#ffc107;color:#111}.back-btn{background:#28a745;color:white}
+.out-btn{background:#dc3545;color:white}.limited-btn{background:#ffc107;color:#111}.back-btn{background:#28a745;color:white}.qty-row{display:inline-flex;align-items:center;gap:4px;margin-left:6px}.qty-btn{min-width:34px;padding:7px 10px!important;background:#6c757d;color:white}.qty-number{display:inline-block;min-width:28px;text-align:center;font-weight:bold}
 input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 .menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}
 .menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}
@@ -995,7 +1014,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
-{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
+{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
 {% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
 </div>
@@ -1003,14 +1022,14 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
-{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
+{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"] - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"] + 1 }}"><button class="qty-btn">+</button></form></div>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
 {% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
 
 <div class="section">
 <h2>🟢 AVAILABLE</h2>
-{% for x in available_main %}<div class="card available"><b>🟢 {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="text" name="qty" placeholder="Qty"><button class="limited-btn">🟡 LIMITED</button></form></div>{% endfor %}
+{% for x in available_main %}<div class="card available"><b>🟢 {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="1"><button class="limited-btn">🟡 LIMITED (1)</button></form></div>{% endfor %}
 </div>
 
 <div class="section">
