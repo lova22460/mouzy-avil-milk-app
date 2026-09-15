@@ -175,7 +175,7 @@ menu = {
     "FRUIT SHAKE": {"Banago": [], "Mangopass": [], "Chikudates": [], "Banatend": [], "Tendates": [], "Datifig": []},
     "FRESH JUICE": {"Orange": [], "Watermelon": [], "Pineapple": [], "Pappaya": [], "Muskmelon": [], "Mosambi": []},
     "FALOODA": {"Royal Banaloooda": [], "Strawberry Banaloooda": [], "Chocolate Banaloooda": [], "Mango Banaloooda": [], "Pista Banaloooda": [], "Dry Fruit Banaloooda": []},
-    "CHOCOLATE SHAKE": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": [], "Choco Coffee Charge": []},
+    "CHOCOLATE SHAKE": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": ["Boost"], "Choco Coffee Charge": []},
     "DOODH MALAI": {"Mix Fruit Malai": [], "Mango Magic Malai": [], "Chocolate Malai": [], "Seetaphal Malai": [], "Kiwi Malai": []},
     "LASSI": {"Plain Lassi": [], "Mango Lassi": [], "Chocolate Lassi": [], "Mix Fruit Lassi": [], "Dry Nuts Lassi": [], "Dry Fruit Lassi": []}
 }
@@ -1015,7 +1015,23 @@ KITCHEN_LIVE_HTML = """
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
 {% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
-{% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}
+{% for a in menu_out_alerts %}<div class="card out">
+<b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b>
+{% if a["item"] %}
+<form method="POST" action="/toggle-item" style="display:inline">
+<input type="hidden" name="category" value="{{ a["category"] }}">
+<input type="hidden" name="item" value="{{ a["item"] }}">
+<input type="hidden" name="action" value="ON">
+<button class="back-btn">🟢 AVAILABLE</button>
+</form>
+{% else %}
+<form method="POST" action="/toggle-category" style="display:inline">
+<input type="hidden" name="category" value="{{ a["category"] }}">
+<input type="hidden" name="action" value="ON">
+<button class="back-btn">🟢 AVAILABLE</button>
+</form>
+{% endif %}
+</div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
 </div>
 
