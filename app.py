@@ -748,6 +748,8 @@ def toggle_category():
     cur.close()
     conn.close()
 
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return "OK", 200
     return redirect("/")
 
 
@@ -770,6 +772,8 @@ def toggle_item():
     else:
         cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, category, item))
     conn.commit(); cur.close(); conn.close()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return "OK", 200
     return redirect("/")
 
 # =========================
@@ -1001,7 +1005,21 @@ kitchenRoot.addEventListener('submit',async e=>{
   const form=e.target.closest('form'); if(!form)return;
   e.preventDefault();
   const button=form.querySelector('button'); if(button)button.disabled=true;
-  try{await fetch(form.action,{method:'POST',body:new FormData(form),cache:'no-store'});await refreshKitchen();}catch(err){await refreshKitchen();}
+  try{
+    const response=await fetch(form.action,{
+      method:'POST',
+      body:new FormData(form),
+      cache:'no-store',
+      credentials:'same-origin',
+      headers:{'X-Requested-With':'XMLHttpRequest'},
+      redirect:'follow'
+    });
+    if(!response.ok) throw new Error('POST failed: '+response.status);
+    await refreshKitchen();
+  }catch(err){
+    console.error('Mouzy control update failed:',err);
+    await refreshKitchen();
+  }
 });
 refreshKitchen();setInterval(refreshKitchen,1000);
 </script>
@@ -1018,7 +1036,7 @@ KITCHEN_LIVE_HTML = """
 {% for a in menu_out_alerts %}<div class="card out">
 <b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b>
 {% if a["item"] %}
-<form method="POST" action="/toggle-item" style="display:inline">
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline">
 <input type="hidden" name="category" value="{{ a["category"] }}">
 <input type="hidden" name="item" value="{{ a["item"] }}">
 <input type="hidden" name="action" value="ON">
@@ -1055,14 +1073,17 @@ KITCHEN_LIVE_HTML = """
 <details class="menu-category" data-category="{{ category }}">
 <summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary>
 <div class="category-items">
-<div class="control-row"><form method="POST" action="/toggle-category"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
+<div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
 <div class="menu-item">
 <div><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
 <div class="item-controls">
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button class="item-off-btn">🔴 OFF</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button class="item-off-btn">🔴 OFF</button></form>
+{% if item["status"] == "OUT OF STOCK" or item["status"] == "CLOSED" %}
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button class="back-btn">🟢 AVAILABLE</button></form>
+{% endif %}
 </div></div>
 {% endfor %}
 </div></details>
