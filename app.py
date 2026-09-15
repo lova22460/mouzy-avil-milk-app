@@ -967,22 +967,22 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items %}
-{% for x in out_items %}<div class="card out"><b>❌ {{ x.name }}</b>{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "CLOSED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
 {% else %}<p>✅ No main ingredient is OUT.</p>{% endif %}
-{% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a.category }}{% if a.item %} → {{ a.item }}{% endif %}</b></div>{% endfor %}
+{% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}
 </div>
 
 <div class="section">
 <h2>🟡 LIMITED</h2>
 {% if limited_items %}
-{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x.name }}</b>{% if x.qty %} | Quantity: <b>{{ x.qty }}</b>{% endif %}{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "LIMITED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
 {% else %}<p>✅ No main ingredient is LIMITED.</p>{% endif %}
-{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a.category }} → {{ a.item }}</b></div>{% endfor %}
+{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}
 </div>
 
 <div class="section">
 <h2>🟢 AVAILABLE</h2>
-{% for x in available_main %}<div class="card available"><b>🟢 {{ x.name }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x.name }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x.name }}"><input type="hidden" name="status" value="LIMITED"><input type="text" name="qty" placeholder="Qty"><button class="limited-btn">🟡 LIMITED</button></form></div>{% endfor %}
+{% for x in available_main %}<div class="card available"><b>🟢 {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="text" name="qty" placeholder="Qty"><button class="limited-btn">🟡 LIMITED</button></form></div>{% endfor %}
 </div>
 
 <div class="section">
@@ -990,16 +990,16 @@ KITCHEN_LIVE_HTML = """
 <p class="small">All categories are collapsed by default. Changes update live every 1 second.</p>
 {% for category,data in menu_status.items() %}
 <details class="menu-category" data-category="{{ category }}">
-<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OUT OF STOCK' }}</span></summary>
+<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary>
 <div class="category-items">
-<div class="control-row"><form method="POST" action="/toggle-category"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data.enabled else 'ON' }}"><button class="{{ 'category-off-btn' if data.enabled else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data.enabled else '🟢 TURN CATEGORY ON' }}</button></form></div>
-{% for item in data.items %}
+<div class="control-row"><form method="POST" action="/toggle-category"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
+{% for item in data["items"] %}
 <div class="menu-item">
-<div><b>{{ item.name }}</b><br><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
+<div><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
 <div class="item-controls">
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
-<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item.name }}"><input type="hidden" name="action" value="OFF"><button class="item-off-btn">🔴 OFF</button></form>
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
+<form method="POST" action="/toggle-item" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button class="item-off-btn">🔴 OFF</button></form>
 </div></div>
 {% endfor %}
 </div></details>
@@ -1036,16 +1036,16 @@ refreshStaff();setInterval(refreshStaff,1000);
 
 STAFF_LIVE_HTML = """
 <div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
-{% if out_items %}{% for x in out_items %}<div class="card"><b>❌ {{ x.name }}</b>{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "CLOSED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}
-{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a.category }}{% if a.item %} → {{ a.item }}{% endif %}</b></div>{% endfor %}</div>
+{% if out_items %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}
+{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}</div>
 
 <div class="section"><h2 class="yellow">🟡 LIMITED</h2>
-{% if limited_items %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x.name }}</b>{% if x.qty %} | Quantity: <b>{{ x.qty }}</b>{% endif %}{% if x.affected %}<br><span class="small">Affected: {% for i in x.affected if i.status == "LIMITED" %}{{ i.category }} → {{ i.item }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}
-{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a.category }} → {{ a.item }}</b></div>{% endfor %}</div>
+{% if limited_items %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}
+{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
-{% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data.enabled else 'cat-off' }}">{{ '🟢 ON' if data.enabled else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
-{% for item in data.items %}<div class="menu-item"><span><b>{{ item.name }}</b></span><span class="{{ 'green' if item.status == 'AVAILABLE' else 'yellow' if item.status == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item.status == 'AVAILABLE' else '🟡 LIMITED' if item.status == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
+{% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
+{% for item in data["items"] %}<div class="menu-item"><span><b>{{ item["name"] }}</b></span><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
 </div></details>{% endfor %}</div>
 """
 
