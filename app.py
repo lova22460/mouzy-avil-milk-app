@@ -203,6 +203,7 @@ def init_menu_controls():
                 item TEXT NOT NULL,
                 enabled BOOLEAN NOT NULL DEFAULT TRUE,
                 manual_status TEXT NOT NULL DEFAULT 'AUTO',
+                qty INTEGER NOT NULL DEFAULT 1,
                 PRIMARY KEY (category, item)
             )
         """)
@@ -212,6 +213,9 @@ def init_menu_controls():
         cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'item_controls' AND column_name = 'manual_status'")
         if cur.fetchone() is None:
             cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
+        cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name = 'item_controls' AND column_name = 'qty'")
+        if cur.fetchone() is None:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN qty INTEGER NOT NULL DEFAULT 1")
 
         for category, items in menu.items():
             cur.execute("""
@@ -221,8 +225,8 @@ def init_menu_controls():
             """, (category,))
             for item in items:
                 cur.execute("""
-                    INSERT INTO item_controls (category, item, enabled, manual_status)
-                    VALUES (%s, %s, TRUE, 'AUTO')
+                    INSERT INTO item_controls (category, item, enabled, manual_status, qty)
+                    VALUES (%s, %s, TRUE, 'AUTO', 1)
                     ON CONFLICT (category, item) DO NOTHING
                 """, (category, item))
     else:
@@ -238,6 +242,7 @@ def init_menu_controls():
                 item TEXT NOT NULL,
                 enabled INTEGER NOT NULL DEFAULT 1,
                 manual_status TEXT NOT NULL DEFAULT 'AUTO',
+                qty INTEGER NOT NULL DEFAULT 1,
                 PRIMARY KEY (category, item)
             )
         """)
@@ -248,6 +253,8 @@ def init_menu_controls():
         cols = [r[1] for r in cur.fetchall()]
         if "manual_status" not in cols:
             cur.execute("ALTER TABLE item_controls ADD COLUMN manual_status TEXT NOT NULL DEFAULT 'AUTO'")
+        if "qty" not in cols:
+            cur.execute("ALTER TABLE item_controls ADD COLUMN qty INTEGER NOT NULL DEFAULT 1")
 
         for category, items in menu.items():
             cur.execute("""
@@ -256,8 +263,8 @@ def init_menu_controls():
             """, (category,))
             for item in items:
                 cur.execute("""
-                    INSERT OR IGNORE INTO item_controls (category, item, enabled, manual_status)
-                    VALUES (?, ?, 1, 'AUTO')
+                    INSERT OR IGNORE INTO item_controls (category, item, enabled, manual_status, qty)
+                    VALUES (?, ?, 1, 'AUTO', 1)
                 """, (category, item))
 
     conn.commit()
@@ -270,13 +277,13 @@ def load_menu_controls():
     cur = conn.cursor()
     cur.execute("SELECT category, enabled FROM category_controls")
     category_rows = cur.fetchall()
-    cur.execute("SELECT category, item, enabled, manual_status FROM item_controls")
+    cur.execute("SELECT category, item, enabled, manual_status, qty FROM item_controls")
     item_rows = cur.fetchall()
     cur.close()
     conn.close()
 
     categories = {row["category"]: bool(row["enabled"]) for row in category_rows}
-    items = {(row["category"], row["item"]): {"enabled": bool(row["enabled"]), "manual_status": row["manual_status"]} for row in item_rows}
+    items = {(row["category"], row["item"]): {"enabled": bool(row["enabled"]), "manual_status": row["manual_status"], "qty": int(row["qty"] or 1)} for row in item_rows}
     return categories, items
 
 
@@ -288,18 +295,20 @@ def effective_item_status(category, item, dependencies, category_enabled=None, i
     if category_enabled is None or item_control is None:
         category_controls, item_controls = load_menu_controls()
         category_enabled = category_controls.get(category, True)
-        item_control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+        item_control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
 
     if not category_enabled:
         return "CLOSED"
 
     if isinstance(item_control, bool):
-        item_control = {"enabled": item_control, "manual_status": "AUTO"}
+        item_control = {"enabled": item_control, "manual_status": "AUTO", "qty": 1}
 
     if not item_control.get("enabled", True):
         return "CLOSED"
 
     if item_control.get("manual_status") == "LIMITED":
+        if int(item_control.get("qty", 1) or 0) <= 0:
+            return "CLOSED"
         for ingredient in dependencies:
             if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
                 return "CLOSED"
@@ -321,31 +330,36 @@ def effective_item_status(category, item, dependencies, category_enabled=None, i
 # =========================
 
 def menu_alerts():
-    """Return menu-level OUT/LIMITED alerts caused by manual controls.
+    """Return grouped manual category/item OUT and LIMITED alerts.
 
-    Ingredient-driven alerts are already handled by affected_menu().
-    Keeping these lists focused on manual controls prevents duplicate alerts.
+    Dependency-driven OUT/LIMITED states are shown through ingredient alerts;
+    these alerts are only for manual menu controls.
     """
     category_controls, item_controls = load_menu_controls()
     out_alerts = []
     limited_alerts = []
 
     for category, items in menu.items():
-        # A category manually switched OFF is represented by the category only.
         if not category_controls.get(category, True):
-            out_alerts.append({"category": category, "item": None})
+            out_alerts.append({"category": category, "item": None, "items": []})
             continue
 
+        out_names = []
+        limited_items = []
         for item in items:
             control = item_controls.get(
                 (category, item),
-                {"enabled": True, "manual_status": "AUTO"}
+                {"enabled": True, "manual_status": "AUTO", "qty": 1}
             )
-
             if not control.get("enabled", True):
-                out_alerts.append({"category": category, "item": item})
-            elif control.get("manual_status") == "LIMITED":
-                limited_alerts.append({"category": category, "item": item})
+                out_names.append(item)
+            elif control.get("manual_status") == "LIMITED" and int(control.get("qty", 1) or 0) > 0:
+                limited_items.append({"item": item, "qty": int(control.get("qty", 1) or 1)})
+
+        if out_names:
+            out_alerts.append({"category": category, "item": None, "items": out_names})
+        if limited_items:
+            limited_alerts.append({"category": category, "items": limited_items})
 
     return out_alerts, limited_alerts
 
@@ -379,7 +393,7 @@ def affected_menu(ingredient, category_controls=None, item_controls=None):
     for category, items in menu.items():
         for item, dependencies in items.items():
             if ingredient in dependencies:
-                control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+                control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
                 result.append({
                     "category": category,
                     "item": item,
@@ -688,12 +702,13 @@ def staff():
 
         for item, dependencies in items.items():
 
-            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
             menu_status[category]["items"].append({
                 "name": item,
                 "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
                 "enabled": item_controls.get((category, item), {"enabled": True}).get("enabled", True),
-                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO")
+                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO"),
+                "qty": int(item_controls.get((category, item), {"qty": 1}).get("qty", 1) or 1)
             })
 
     conn = get_db()
@@ -764,16 +779,62 @@ def toggle_item():
         return redirect("/")
     if action not in {"ON", "OFF", "LIMITED"}:
         action = "ON"
-    enabled = action != "OFF"
-    manual_status = "AUTO" if action == "ON" else action
+
     conn = get_db(); cur = conn.cursor()
-    if DATABASE_URL:
-        cur.execute("UPDATE item_controls SET enabled = %s, manual_status = %s WHERE category = %s AND item = %s", (enabled, manual_status, category, item))
+    if action == "ON":
+        enabled, manual_status, qty = True, "AUTO", 1
+    elif action == "OFF":
+        enabled, manual_status, qty = False, "OFF", 1
     else:
-        cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, category, item))
+        enabled, manual_status, qty = True, "LIMITED", 1
+
+    if DATABASE_URL:
+        cur.execute("UPDATE item_controls SET enabled = %s, manual_status = %s, qty = %s WHERE category = %s AND item = %s", (enabled, manual_status, qty, category, item))
+    else:
+        cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, qty, category, item))
     conn.commit(); cur.close(); conn.close()
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return "OK", 200
+    return redirect("/")
+
+
+@app.route("/update-menu-item", methods=["POST"])
+def update_menu_item():
+    if not session.get("kitchen"):
+        return redirect("/login")
+    category = request.form.get("category", "")
+    item = request.form.get("item", "")
+    action = request.form.get("action", "AVAILABLE").upper()
+    if category not in menu or item not in menu[category]:
+        return redirect("/")
+
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT qty FROM item_controls WHERE category = " + ("%s" if DATABASE_URL else "?") + " AND item = " + ("%s" if DATABASE_URL else "?"), (category, item))
+    row = cur.fetchone()
+    current_qty = int((row["qty"] if row else 1) or 1)
+
+    if action == "AVAILABLE":
+        enabled, manual_status, new_qty = True, "AUTO", 1
+    elif action == "PLUS":
+        enabled, manual_status, new_qty = True, "LIMITED", current_qty + 1
+    elif action == "MINUS":
+        new_qty = current_qty - 1
+        if new_qty <= 0:
+            enabled, manual_status, new_qty = False, "OFF", 1
+        else:
+            enabled, manual_status = True, "LIMITED"
+    elif action == "SET_LIMITED":
+        try:
+            new_qty = max(1, int(request.form.get("qty", "1")))
+        except ValueError:
+            new_qty = 1
+        enabled, manual_status = True, "LIMITED"
+    else:
+        enabled, manual_status, new_qty = True, "AUTO", 1
+
+    if DATABASE_URL:
+        cur.execute("UPDATE item_controls SET enabled = %s, manual_status = %s, qty = %s WHERE category = %s AND item = %s", (enabled, manual_status, new_qty, category, item))
+    else:
+        cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, new_qty, category, item))
+    conn.commit(); cur.close(); conn.close()
     return redirect("/")
 
 # =========================
@@ -870,12 +931,12 @@ def live():
     for category, items in menu.items():
         menu_status[category] = {"enabled": category_controls.get(category, True), "items": []}
         for item, dependencies in items.items():
-            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
             menu_status[category]["items"].append({
                 "name": item,
                 "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
                 "enabled": ctrl.get("enabled", True),
-                "manual_status": ctrl.get("manual_status", "AUTO")
+                "manual_status": ctrl.get("manual_status", "AUTO"), "qty": int(ctrl.get("qty", 1) or 1)
             })
 
     return render_template_string(KITCHEN_LIVE_HTML,
@@ -920,12 +981,13 @@ def home():
 
         for item, dependencies in items.items():
 
-            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO"})
+            ctrl = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
             menu_status[category]["items"].append({
                 "name": item,
                 "status": item_status(dependencies, category, item, category_controls.get(category, True), ctrl),
                 "enabled": item_controls.get((category, item), {"enabled": True}).get("enabled", True),
-                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO")
+                "manual_status": item_controls.get((category, item), {"manual_status": "AUTO"}).get("manual_status", "AUTO"),
+                "qty": int(item_controls.get((category, item), {"qty": 1}).get("qty", 1) or 1)
             })
 
 
@@ -1037,20 +1099,11 @@ KITCHEN_LIVE_HTML = """
 {% if out_items or menu_out_alerts %}
 {% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
 {% for a in menu_out_alerts %}<div class="card out">
-<b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b>
-{% if a["item"] %}
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline">
-<input type="hidden" name="category" value="{{ a["category"] }}">
-<input type="hidden" name="item" value="{{ a["item"] }}">
-<input type="hidden" name="action" value="ON">
-<button class="back-btn">🟢 AVAILABLE</button>
-</form>
+<b>🔴 {{ a["category"] }}</b>
+{% if a["item"] is none %}
+<form method="POST" action="/toggle-category" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="action" value="ON"><button class="back-btn">🟢 AVAILABLE</button></form>
 {% else %}
-<form method="POST" action="/toggle-category" style="display:inline">
-<input type="hidden" name="category" value="{{ a["category"] }}">
-<input type="hidden" name="action" value="ON">
-<button class="back-btn">🟢 AVAILABLE</button>
-</form>
+{% for item_name in a["items"] %}<div style="margin-top:8px"><b>→ {{ item_name }}</b> <form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ item_name }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% endfor %}
 {% endif %}
 </div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
@@ -1060,7 +1113,7 @@ KITCHEN_LIVE_HTML = """
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
 {% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
-{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}
+{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }}</b>{% for mi in a["items"] %}<div style="margin-top:8px"><b>→ {{ mi["item"] }}</b><div class="qty-row"><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="MINUS"><button class="qty-btn">−</button></form><span class="qty-number">{{ mi["qty"] }}</span><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="PLUS"><button class="qty-btn">+</button></form><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div></div>{% endfor %}</div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
 
