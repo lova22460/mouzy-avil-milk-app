@@ -391,6 +391,23 @@ def affected_menu(ingredient, category_controls=None, item_controls=None):
     return result
 
 
+def group_affected_menu(affected, wanted_status):
+    """Group affected menu items by category for compact display."""
+    grouped = []
+    category_map = {}
+
+    for item in affected:
+        if item["status"] != wanted_status:
+            continue
+        category = item["category"]
+        if category not in category_map:
+            category_map[category] = []
+            grouped.append({"category": category, "items": category_map[category]})
+        category_map[category].append(item["item"])
+
+    return grouped
+
+
 
 
 # KITCHEN LOGIN 
@@ -647,9 +664,9 @@ def staff():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls)})
+            out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
         elif data["status"] == "LIMITED":
-            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
             available_main.append({"name": ingredient})
 
@@ -819,9 +836,9 @@ def live():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
         elif data["status"] == "LIMITED":
-            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
             available_main.append({"name": ingredient})
 
@@ -862,9 +879,9 @@ def home():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
         elif data["status"] == "LIMITED":
-            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls)})
+            limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
             available_main.append({"name": ingredient})
 
@@ -916,7 +933,7 @@ body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}
 h1{text-align:center}
 .section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
 .card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}
-.available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}
+.available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}
 button{border:none;padding:8px 12px;border-radius:8px;margin:4px 2px;font-weight:bold;cursor:pointer}
 .out-btn{background:#dc3545;color:white}.limited-btn{background:#ffc107;color:#111}.back-btn{background:#28a745;color:white}
 input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
@@ -978,7 +995,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
-{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
 {% for a in menu_out_alerts %}<div class="card out"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
 </div>
@@ -986,7 +1003,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
-{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}
+{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
 {% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
@@ -1025,7 +1042,7 @@ STAFF_HTML = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mouzy Edappally Staff View</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
 </style></head><body>
 <h1 style="text-align:center">🥤 MOUZY EDAPPALLY STAFF VIEW</h1>
 <div style="text-align:center;margin-bottom:12px"><b>⚡ LIVE STAFF VIEW</b><br><span class="small">Updates every 1 second. Open menu categories stay open.</span></div>
@@ -1047,10 +1064,10 @@ refreshStaff();setInterval(refreshStaff,1000);
 
 STAFF_LIVE_HTML = """
 <div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
-{% if out_items or menu_out_alerts %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "CLOSED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}</div>
+{% if out_items or menu_out_alerts %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_out_alerts %}<div class="card"><b>🔴 {{ a["category"] }}{% if a["item"] %} → {{ a["item"] }}{% endif %}</b></div>{% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}</div>
 
 <div class="section"><h2 class="yellow">🟡 LIMITED</h2>
-{% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% if x["affected"] %}<br><span class="small">Affected: {% for i in x["affected"] if i["status"] == "LIMITED" %}{{ i["category"] }} → {{ i["item"] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>{% endfor %}{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
+{% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
 {% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
