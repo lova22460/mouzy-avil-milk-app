@@ -1003,6 +1003,9 @@ kitchenRoot.addEventListener('focusout',e=>{
 });
 kitchenRoot.addEventListener('submit',async e=>{
   const form=e.target.closest('form'); if(!form)return;
+  // MENU controls use normal browser POST/redirect intentionally.
+  // This avoids the 1-second live refresh from swallowing category/item changes.
+  if(form.classList.contains('menu-control-form')) return;
   e.preventDefault();
   const button=form.querySelector('button'); if(button)button.disabled=true;
   try{
