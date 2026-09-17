@@ -104,12 +104,12 @@ stock = {}
 INGREDIENT_CATEGORIES = {
     "SINGLE INGREDIENTS": [
         "Fruit Mix", "Boost", "Dates", "Blueberry Dry", "Dry Fruits",
-        "Chocolate", "Cashew / Nuts", "Badam", "Chocos", "Spanish chips",
+        "Chocolate", "Cashew / Nuts", "Badam", "Chocos", "Chocolate Wafer", "Umbrella", "Spanish chips",
         "Chocolate Chips", "White Chips", "Cherry",
     ],
 
     "MILK / DAIRY": [
-        "Fresh Cream", "Shake Milk", "Diet Milk",
+        "Fresh Cream", "Shake Milk", "Diet Milk", "Lassi",
     ],
 
     "ICE CREAM": [
@@ -123,7 +123,7 @@ INGREDIENT_CATEGORIES = {
         "Tender Cut Piece",
         "Pineapple", "Orange", "Mango", "Strawberry", "Blueberry",
         "Kiwi", "Lemon", "Papaya", "Muskmelon", "Mosambi", "Seetaphal",
-        "Watermelon", "Mix Fruits", "Robest banana", "Big banana",
+        "Watermelon", "Robest banana", "Big banana",
     ],
 
     "PULP": [
@@ -145,7 +145,7 @@ INGREDIENT_CATEGORIES = {
     ],
 
     "CHOCOLATE SHAKE ITEMS": [
-        "Coffee", "Oreo", "Kitkat", "Choco Pie", "Brownie",
+        "Coffee", "Oreo", "Kitkat", "Choco Pie", "Chocolate Wafer", "Brownie",
     ],
 
     "CHEESEY CHIKEN": [
@@ -159,6 +159,8 @@ INGREDIENT_CATEGORIES = {
     "SYRUPS": [
         "Passion Syrup", "Rose syrup", "Strawberry Syrup", "Mango Syrup",
         "Pista Syrup", "Chocolate Syrup", "Butterscotch Syrup",
+        "Blueberry Syrup", "Honey", "Rooh Afza Syrup", "Watermelon Syrup",
+        "Kiwi Syrup", "Date Syrup", "Tender Syrup", "Spanish Syrup",
     ],
 }
 
@@ -186,44 +188,44 @@ menu = {
     },
 
     "LITTLE COMBO AVIL MILK": {
-        "Little Strawberry": ["Strawberry Ice Cream", "Strawberry"],
-        "Little Pista": ["Pista Ice Cream"],
-        "Little Mango": ["Mango Ice Cream", "Mango"],
-        "Little Arabian": ["Dates Ice Cream", "Dates"],
-        "Little Butterscotch": ["Butterscotch Ice Cream"],
-        "Little Choco": ["Chocolate Ice Cream", "Chocos"],
+        "Little Strawberry": ["Strawberry Ice Cream", "Strawberry", "Strawberry Syrup", "Umbrella"],
+        "Little Pista": ["Pista Ice Cream", "Pista Syrup", "Umbrella"],
+        "Little Mango": ["Mango Ice Cream", "Mango", "Mango Syrup", "Umbrella"],
+        "Little Arabian": ["Dates Ice Cream", "Dates", "Date Syrup", "Umbrella"],
+        "Little Butterscotch": ["Butterscotch Ice Cream", "Butterscotch Syrup", "Umbrella"],
+        "Little Choco": ["Chocolate Ice Cream", "Chocos", "Chocolate Syrup", "Chocolate Wafer", "Umbrella"],
     },
 
     "FUSION AVIL MILK": {
-        "Watermelon": ["Vanilla Ice Cream", "Watermelon"],
-        "Rooh Afza": ["Vanilla Ice Cream", "Watermelon"],
-        "Butterscotch": ["Butterscotch Ice Cream"],
-        "Pista": ["Pista Ice Cream"],
-        "Kiwi": ["Vanilla Ice Cream", "Kiwi"],
-        "Chocolate": ["Chocolate Ice Cream", "Chocolate Chips"],
-        "Strawberry": ["Strawberry Ice Cream", "Strawberry"],
-        "Mango": ["Mango Ice Cream", "Mango"],
-        "Dates": ["Dates Ice Cream", "Dates"],
+        "Watermelon": ["Vanilla Ice Cream", "Watermelon", "Watermelon Syrup"],
+        "Rooh Afza": ["Vanilla Ice Cream", "Watermelon", "Rooh Afza Syrup"],
+        "Butterscotch": ["Butterscotch Ice Cream", "Butterscotch Syrup"],
+        "Pista": ["Pista Ice Cream", "Pista Syrup"],
+        "Kiwi": ["Vanilla Ice Cream", "Kiwi", "Kiwi Syrup"],
+        "Chocolate": ["Chocolate Ice Cream", "Chocolate Chips", "Chocolate Syrup"],
+        "Strawberry": ["Strawberry Ice Cream", "Strawberry", "Strawberry Syrup"],
+        "Mango": ["Mango Ice Cream", "Mango", "Mango Syrup"],
+        "Dates": ["Dates Ice Cream", "Dates", "Date Syrup"],
     },
 
     "SUPREME AVIL MILK": {
-        "Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam"],
-        "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam"],
-        "Royal": ["Fruit Mix", "Mango Ice Cream", "Cashew / Nuts", "Badam"],
-        "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry"],
-        "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam"],
-        "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam"],
-        "Choco Nut": ["Chocolate Ice Cream", "Chocos", "Cashew / Nuts", "Badam"],
-        "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam"],
-        "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam", "Spanish chips"],
-        "Tender Coconut": ["Tender Ice Cream", "Tender Cut Piece", "Cashew / Nuts", "Badam"],
-        "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam", "Blueberry Dry"],
-        "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam"],
+        "Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam", "Chocolate Syrup"],
+        "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam", "Mango Syrup"],
+        "Royal": ["Fruit Mix", "Mango Ice Cream", "Cashew / Nuts", "Badam", "Mango Syrup", "Rose syrup"],
+        "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry", "Mango Syrup"],
+        "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam", "Mango Syrup"],
+        "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam", "Mango Syrup"],
+        "Choco Nut": ["Chocolate Ice Cream", "Chocos", "Cashew / Nuts", "Badam", "Chocolate Syrup"],
+        "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam", "Mango Syrup"],
+        "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam", "Spanish chips", "Spanish Syrup"],
+        "Tender Coconut": ["Tender Ice Cream", "Tender Cut Piece", "Cashew / Nuts", "Badam", "Tender Syrup", "Honey"],
+        "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam", "Blueberry Dry", "Blueberry Syrup"],
+        "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam", "Date Syrup"],
         "Dry Fruits": ["Mango Ice Cream", "Dry Fruits", "Cashew / Nuts", "Badam"],
         "Special Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"],
     },
 
-    "DIET AVIL MIX": {
+    "DIET AVIL MILK": {
         "Normal Diet": ["Diet Milk"],
         "Fruit Diet": ["Diet Milk", "Fruit Mix"],
         "Fruit Nut Diet": ["Diet Milk", "Fruit Mix", "Cashew / Nuts", "Badam"],
