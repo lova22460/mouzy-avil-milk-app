@@ -1234,10 +1234,7 @@ async function refreshKitchen(){
   }catch(e){}
 }
 const kitchenRoot=document.getElementById('kitchen-live-root');
-// Controls must never trigger the item-name/category collapse behavior.
-kitchenRoot.addEventListener('click',e=>{
-  if(e.target.closest('.item-controls, .control-row, form')) e.stopPropagation();
-},true);
+let kitchenBusy=false;
 kitchenRoot.addEventListener('focusin',e=>{
   if(e.target.matches('input,select,textarea')) kitchenEditing=true;
 });
@@ -1249,6 +1246,8 @@ kitchenRoot.addEventListener('focusout',e=>{
 kitchenRoot.addEventListener('submit',async e=>{
   const form=e.target.closest('form'); if(!form)return;
   e.preventDefault();
+  if(kitchenBusy)return;
+  kitchenBusy=true;
   const button=form.querySelector('button'); if(button)button.disabled=true;
   try{
     const response=await fetch(form.action,{
@@ -1256,17 +1255,17 @@ kitchenRoot.addEventListener('submit',async e=>{
       body:new FormData(form),
       cache:'no-store',
       credentials:'same-origin',
-      headers:{'X-Requested-With':'XMLHttpRequest'},
-      redirect:'follow'
+      headers:{'X-Requested-With':'XMLHttpRequest'}
     });
     if(!response.ok) throw new Error('POST failed: '+response.status);
     await refreshKitchen();
   }catch(err){
     console.error('Mouzy control update failed:',err);
-    await refreshKitchen();
+  }finally{
+    kitchenBusy=false;
   }
 });
-refreshKitchen();setInterval(refreshKitchen,1000);
+refreshKitchen();setInterval(()=>{ if(!kitchenBusy) refreshKitchen(); },1000);
 </script>
 </body>
 </html>
@@ -1346,13 +1345,21 @@ KITCHEN_LIVE_HTML = """
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
 <div class="menu-item">
-<div class="menu-item-name"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
+<div class="menu-item-name" onclick="this.closest('details').open=false" title="Tap item name to collapse category"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span>{% if item["status"] == "LIMITED" %} <span class="qty-number">{{ item["qty"] }}</span>{% endif %}</div>
 <div class="item-controls">
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" onclick="event.stopPropagation()" class="item-on-btn">🟢 ON</button></form>
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button type="submit" onclick="event.stopPropagation()" class="item-limited-btn">🟡 LIMITED</button></form>
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button type="submit" onclick="event.stopPropagation()" class="item-off-btn">🔴 OFF</button></form>
+{% if item["status"] == "LIMITED" %}
+<form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="MINUS"><button type="submit" class="qty-btn">−</button></form>
+<span class="qty-number">{{ item["qty"] }}</span>
+<form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="PLUS"><button type="submit" class="qty-btn">＋</button></form>
+<form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="AVAILABLE"><button type="submit" class="back-btn">🟢 AVAILABLE</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button type="submit" class="item-off-btn">🔴 OFF</button></form>
+{% else %}
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" class="item-on-btn">🟢 ON</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button type="submit" class="item-limited-btn">🟡 LIMITED</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button type="submit" class="item-off-btn">🔴 OFF</button></form>
 {% if item["status"] == "OUT OF STOCK" or item["status"] == "CLOSED" %}
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" onclick="event.stopPropagation()" class="back-btn">🟢 AVAILABLE</button></form>
+<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" class="back-btn">🟢 AVAILABLE</button></form>
+{% endif %}
 {% endif %}
 </div></div>
 {% endfor %}
