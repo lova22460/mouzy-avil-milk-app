@@ -1089,14 +1089,17 @@ KITCHEN_LIVE_HTML = """
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
 {% for x in out_items %}<details class="card out ingredient-alert" data-key="ingredient-out-{{ x["name"]|e }}" data-ingredient="{{ x["name"]|e }}"><summary><b>🔴 {{ x["name"] }}</b></summary><div class="ingredient-actions"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="red">🔴 CLOSED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
-{% for a in menu_out_alerts %}<div class="card out">
-<b>🔴 {{ a["category"] }}</b>
+{% for a in menu_out_alerts %}<details class="card out ingredient-alert" data-key="menu-out-{{ a["category"] }}">
+<summary><b>🔴 {{ a["category"] }}</b><span>›</span></summary>
 {% if a["item"] is none %}
-<form method="POST" action="/toggle-category" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="action" value="ON"><button class="back-btn">🟢 AVAILABLE</button></form>
+<div class="affected-title">Category is OFF:</div>
+<div class="small">All items in this category are closed.</div>
+<div class="ingredient-actions"><form method="POST" action="/toggle-category"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="action" value="ON"><button class="back-btn">🟢 AVAILABLE / TURN CATEGORY ON</button></form></div>
 {% else %}
-{% for item_name in a["items"] %}<div style="margin-top:8px"><b>→ {{ item_name }}</b> <form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ item_name }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% endfor %}
+{% for item_name in a["items"] %}<div style="margin-top:8px"><b>→ {{ item_name }}</b> <span class="red">🔴 CLOSED</span>
+<form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ item_name }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% endfor %}
 {% endif %}
-</div>{% endfor %}
+</details>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is OUT.</p>{% endif %}
 </div>
 
@@ -1104,7 +1107,7 @@ KITCHEN_LIVE_HTML = """
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
 {% for x in limited_items %}<details class="card limited ingredient-alert" data-key="ingredient-limited-{{ x["name"]|e }}" data-ingredient="{{ x["name"]|e }}"><summary><b>🟡 {{ x["name"] }}</b> <span class="qty-number">{{ x["qty"] }}</span></summary><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="yellow">🟡 LIMITED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
-{% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }}</b>{% for mi in a["items"] %}<div style="margin-top:8px"><b>→ {{ mi["item"] }}</b><div class="qty-row"><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="MINUS"><button class="qty-btn">−</button></form><span class="qty-number">{{ mi["qty"] }}</span><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="PLUS"><button class="qty-btn">+</button></form><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div></div>{% endfor %}</div>{% endfor %}
+{% for a in menu_limited_alerts %}<details class="card limited ingredient-alert" data-key="menu-limited-{{ a["category"] }}"><summary><b>🟡 {{ a["category"] }}</b><span>›</span></summary>{% for mi in a["items"] %}<div style="margin-top:8px"><b>→ {{ mi["item"] }}</b> <span class="yellow">🟡 LIMITED</span><div class="qty-row"><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="MINUS"><button class="qty-btn">−</button></form><span class="qty-number">{{ mi["qty"] }}</span><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="PLUS"><button class="qty-btn">+</button></form><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div></div>{% endfor %}</details>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
 
@@ -1175,9 +1178,14 @@ refreshStaff();setInterval(refreshStaff,1000);
 STAFF_LIVE_HTML = """
 <div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_out_alerts %}
-<div class="card"><b>🔴 {{ a["category"] }}</b>
-{% if a["items"] %}<div class="dependency-line">→ {{ a["items"]|join(", ") }}</div>{% endif %}
-</div>
+<details class="card out ingredient-alert" data-key="staff-menu-out-{{ a["category"] }}">
+<summary><b>🔴 {{ a["category"] }}</b><span>›</span></summary>
+{% if a["item"] is none %}
+<div class="dependency-line">→ CATEGORY OFF — all items closed</div>
+{% else %}
+{% for item_name in a["items"] %}<div class="dependency-line">→ {{ item_name }} <span class="red">🔴 CLOSED</span></div>{% endfor %}
+{% endif %}
+</details>
 {% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}</div>
 
 <div class="section"><h2 class="yellow">🟡 LIMITED</h2>
