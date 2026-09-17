@@ -310,12 +310,12 @@ menu = {
     },
 
     "LASSI": {
-        "Plain Lassi": [],
-        "Mango Lassi": ["Mango"],
-        "Chocolate Lassi": ["Chocolate"],
-        "Mix Fruit Lassi": ["Fruit Mix"],
-        "Dry Nuts Lassi": ["Cashew / Nuts", "Badam"],
-        "Dry Fruit Lassi": ["Dry Fruits"],
+        "Plain Lassi": ["Lassi"],
+        "Mango Lassi": ["Lassi", "Mango"],
+        "Chocolate Lassi": ["Lassi", "Chocolate"],
+        "Mix Fruit Lassi": ["Lassi", "Fruit Mix"],
+        "Dry Nuts Lassi": ["Lassi", "Cashew / Nuts", "Badam"],
+        "Dry Fruit Lassi": ["Lassi", "Dry Fruits"],
     },
 }
 
@@ -954,6 +954,8 @@ def toggle_item():
     else:
         cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, qty, category, item))
     conn.commit(); cur.close(); conn.close()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return "OK", 200
     return redirect("/")
 
 
@@ -996,6 +998,8 @@ def update_menu_item():
     else:
         cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, new_qty, category, item))
     conn.commit(); cur.close(); conn.close()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return "OK", 200
     return redirect("/")
 
 # =========================
@@ -1062,6 +1066,8 @@ def update():
     # Reload latest stock from database
     load_stock_from_db()
 
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return "OK", 200
     return redirect("/")
 
 
@@ -1190,10 +1196,10 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 .menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}
 .menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}
 .menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}
-.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 3px;border-bottom:1px solid #eee}
-.green{color:green;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.red{color:red;font-weight:bold}.small{color:#777;font-size:13px}
+.category-items{padding:0 12px 8px}.menu-item-name{cursor:pointer;flex:1}.menu-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 3px;border-bottom:1px solid #eee}
+.green{color:green;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.red{color:red;font-weight:bold}.small{color:#777;font-size:13px}.ingredient-alert .qty-number{margin-left:18px;min-width:32px;display:inline-block;text-align:center}
 .category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
-.ingredient-master-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.ingredient-master-category summary{cursor:pointer;padding:14px;font-weight:bold;font-size:16px;list-style:none;display:flex;justify-content:space-between}.ingredient-master-category summary::-webkit-details-marker{display:none}.ingredient-master-category[open] summary{border-bottom:1px solid #eee}.ingredient-master-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 3px;border-bottom:1px solid #eee}.ingredient-master-row .item-controls{white-space:nowrap}.ingredient-alert{cursor:pointer}.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;cursor:pointer}.ingredient-alert summary::-webkit-details-marker{display:none}.ingredient-alert[open] summary{margin-bottom:10px}.ingredient-alert .dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:#f1f1f1}
+.ingredient-master-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.ingredient-master-category summary{cursor:pointer;padding:14px;font-weight:bold;font-size:16px;list-style:none;display:flex;justify-content:space-between}.ingredient-master-category summary::-webkit-details-marker{display:none}.ingredient-master-category[open] summary{border-bottom:1px solid #eee}.ingredient-master-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 3px;border-bottom:1px solid #eee}.ingredient-master-row .item-controls{white-space:nowrap}.ingredient-alert{cursor:pointer}.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}.ingredient-alert summary::-webkit-details-marker{display:none}.ingredient-alert[open] summary{margin-bottom:10px}.ingredient-alert .dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:#f1f1f1}
 .control-row{padding:8px 0;border-bottom:1px solid #eee}.item-controls{white-space:nowrap;text-align:right}
 .category-off-btn,.category-on-btn,.item-off-btn,.item-on-btn,.item-limited-btn{color:white;border:none;border-radius:7px;padding:7px 10px;font-weight:bold}
 .category-off-btn,.item-off-btn{background:#dc3545}.category-on-btn,.item-on-btn{background:#28a745}.item-limited-btn{background:#ffc107;color:#111!important}
@@ -1238,9 +1244,6 @@ kitchenRoot.addEventListener('focusout',e=>{
 });
 kitchenRoot.addEventListener('submit',async e=>{
   const form=e.target.closest('form'); if(!form)return;
-  // MENU controls use normal browser POST/redirect intentionally.
-  // This avoids the 1-second live refresh from swallowing category/item changes.
-  if(form.classList.contains('menu-control-form')) return;
   e.preventDefault();
   const button=form.querySelector('button'); if(button)button.disabled=true;
   try{
@@ -1269,7 +1272,7 @@ refreshKitchen();setInterval(refreshKitchen,1000);
 KITCHEN_LIVE_HTML = """
 <style>
 .ingredient-alert{cursor:pointer;}
-.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;cursor:pointer;user-select:none;}
+.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:18px;cursor:pointer;user-select:none}.ingredient-alert summary .qty-number{margin-left:18px;min-width:32px;display:inline-block;text-align:center}
 .ingredient-alert summary::-webkit-details-marker{display:none;}
 .ingredient-alert[open] summary{margin-bottom:10px;}
 .affected-title{font-weight:700;margin:8px 0;}
@@ -1339,7 +1342,7 @@ KITCHEN_LIVE_HTML = """
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
 <div class="menu-item">
-<div><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
+<div class="menu-item-name" onclick="this.closest('details').open=false" title="Tap to collapse category"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>
 <div class="item-controls">
 <form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button class="item-on-btn">🟢 ON</button></form>
 <form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button class="item-limited-btn">🟡 LIMITED</button></form>
@@ -1361,7 +1364,7 @@ STAFF_HTML = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mouzy Edappally Staff View</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.ingredient-alert .qty-number{margin-left:18px;min-width:32px;display:inline-block;text-align:center}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item-name{cursor:pointer;flex:1}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
 </style></head><body>
 <h1 style="text-align:center">🥤 MOUZY EDAPPALLY STAFF VIEW</h1>
 <div style="text-align:center;margin-bottom:12px"><b>⚡ LIVE STAFF VIEW</b><br><span class="small">Updates every 1 second. Open menu categories stay open.</span></div>
