@@ -1263,13 +1263,6 @@ kitchenRoot.addEventListener('submit',async e=>{
   }
 });
 refreshKitchen();setInterval(refreshKitchen,1000);
-
-<script>
-document.addEventListener('click', function(e) {
-  const form = e.target.closest('form.menu-action-form');
-  if (form) e.stopPropagation();
-}, true);
-</script>
 </script>
 </body>
 </html>
@@ -1395,13 +1388,6 @@ async function refreshStaff(){
  }catch(e){}
 }
 refreshStaff();setInterval(refreshStaff,1000);
-
-<script>
-document.addEventListener('click', function(e) {
-  const form = e.target.closest('form.menu-action-form');
-  if (form) e.stopPropagation();
-}, true);
-</script>
 </script></body></html>
 """
 
