@@ -425,6 +425,39 @@ def load_menu_controls():
 
 
 
+
+def load_stock_from_db():
+    """Load the latest ingredient statuses/quantities from the database."""
+    global stock
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT ingredient, status, qty FROM stock")
+        rows = cur.fetchall()
+    finally:
+        cur.close()
+        conn.close()
+
+    loaded = {}
+    for row in rows:
+        if isinstance(row, dict):
+            ingredient = row["ingredient"]
+            status = row["status"]
+            qty = row.get("qty", "")
+        else:
+            ingredient = row[0]
+            status = row[1]
+            qty = row[2]
+        loaded[ingredient] = {"status": status, "qty": qty}
+
+    # Keep every final master/dependency ingredient available to the UI.
+    for ingredient in MAIN_INGREDIENTS:
+        if ingredient not in loaded:
+            loaded[ingredient] = {"status": "AVAILABLE", "qty": ""}
+
+    stock = loaded
+
+
 # Final master seed/load. This runs only after INGREDIENT_CATEGORIES and menu
 # are fully defined, so every dependency has a persistent DB row.
 for _category_items in menu.values():
