@@ -119,6 +119,31 @@ stock = {
     "Fruit Mix": {"status": "AVAILABLE", "qty": ""},
     "Cashew / Nuts": {"status": "AVAILABLE", "qty": ""},
     "Badam": {"status": "AVAILABLE", "qty": ""},
+
+    "Fresh Cream": {"status": "AVAILABLE", "qty": ""},
+    "Shake Milk": {"status": "AVAILABLE", "qty": ""},
+    "Diet Milk": {"status": "AVAILABLE", "qty": ""},
+    "Tender Cut Piece": {"status": "AVAILABLE", "qty": ""},
+
+    "Pineapple": {"status": "AVAILABLE", "qty": ""},
+    "Orange": {"status": "AVAILABLE", "qty": ""},
+    "Papaya": {"status": "AVAILABLE", "qty": ""},
+    "Muskmelon": {"status": "AVAILABLE", "qty": ""},
+    "Mosambi": {"status": "AVAILABLE", "qty": ""},
+    "Seetaphal": {"status": "AVAILABLE", "qty": ""},
+    "Watermelon": {"status": "AVAILABLE", "qty": ""},
+    "Mix Fruits": {"status": "AVAILABLE", "qty": ""},
+
+    "Tender Pulp": {"status": "AVAILABLE", "qty": ""},
+    "Strawberry Pulp": {"status": "AVAILABLE", "qty": ""},
+    "Grapes Pulp": {"status": "AVAILABLE", "qty": ""},
+
+    "Lemon": {"status": "AVAILABLE", "qty": ""},
+    "Mint": {"status": "AVAILABLE", "qty": ""},
+    "Ginger": {"status": "AVAILABLE", "qty": ""},
+    "Sprite": {"status": "AVAILABLE", "qty": ""},
+    "Falooda": {"status": "AVAILABLE", "qty": ""},
+    "Banana": {"status": "AVAILABLE", "qty": ""},
 }
 init_db()
 def load_stock_from_db():
@@ -146,16 +171,75 @@ load_stock_from_db()
 # MAIN INGREDIENTS
 # =========================
 
+INGREDIENT_CATEGORIES = {
+    "MILK / DAIRY": [
+        "Fresh Cream",
+        "Shake Milk",
+        "Diet Milk",
+        "Tender Cut Piece",
+    ],
+    "ICE CREAM": [
+        "Vanilla Ice Cream",
+        "Chocolate Ice Cream",
+        "Mango Ice Cream",
+        "Strawberry Ice Cream",
+        "Pista Ice Cream",
+        "Butterscotch Ice Cream",
+        "Spanish Ice Cream",
+        "Dates Ice Cream",
+        "Tender Ice Cream",
+        "Blueberry Ice Cream",
+    ],
+    "FRESH FRUITS": [
+        "Mango",
+        "Strawberry",
+        "Kiwi",
+        "Pineapple",
+        "Orange",
+        "Papaya",
+        "Muskmelon",
+        "Mosambi",
+        "Seetaphal",
+        "Watermelon",
+        "Mix Fruits",
+    ],
+    "PULP": [
+        "Tender Pulp",
+        "Strawberry Pulp",
+        "Grapes Pulp",
+    ],
+    "LIME": [
+        "Lemon",
+        "Mint",
+        "Ginger",
+        "Pineapple",
+    ],
+    "MOJITO": [
+        "Sprite",
+    ],
+    "FALOODA": [
+        "Falooda",
+    ],
+    "SINGLE INGREDIENTS": [
+        "Boost",
+        "Mango",
+        "Strawberry",
+        "Dates",
+        "Kiwi",
+        "Blueberry Dry",
+        "Dry Fruits",
+        "Tender",
+        "Chocolate",
+        "Fruit Mix",
+        "Cashew / Nuts",
+        "Badam",
+    ],
+}
+
 MAIN_INGREDIENTS = [
-    "Boost",
-    "Mango",
-    "Strawberry",
-    "Dates",
-    "Kiwi",
-    "Blueberry Dry",
-    "Tender",
-    "Dry Fruits",
-    # Fruit Mix and Vanilla Ice Cream are dependencies, not main ingredient buttons.
+    ingredient
+    for ingredients in INGREDIENT_CATEGORIES.values()
+    for ingredient in ingredients
 ]
 
 
@@ -164,20 +248,127 @@ MAIN_INGREDIENTS = [
 # =========================
 
 menu = {
-    "REGULAR AVIL MILK": {"Mini": [], "Normal": [], "Normal Boost": ["Boost"], "Fruit": ["Fruit Mix"], "Mango Passion": ["Mango"], "White": ["Vanilla Ice Cream"], "Special": ["Fruit Mix", "Vanilla Ice Cream"], "SP Boost": ["Boost", "Vanilla Ice Cream"]},
-    "LITTLE COMBO AVIL MILK": {"Little Strawberry": ["Strawberry Ice Cream", "Strawberry"], "Little Pista": ["Pista Ice Cream"], "Little Mango": ["Mango Ice Cream", "Mango"], "Little Arabian": ["Dates Ice Cream", "Dates"], "Little Butterscotch": ["Butterscotch Ice Cream"], "Little Choco": ["Chocolate Ice Cream", "Chocolate"]},
-    "FUSION AVIL MILK": {"Watermelon": ["Vanilla Ice Cream"], "Rooh Afza": ["Vanilla Ice Cream"], "Butterscotch": ["Butterscotch Ice Cream"], "Pista": ["Pista Ice Cream"], "Kiwi": ["Vanilla Ice Cream", "Kiwi"], "Chocolate": ["Chocolate Ice Cream", "Chocolate"], "Strawberry": ["Strawberry Ice Cream", "Strawberry"], "Mango": ["Mango Ice Cream", "Mango"], "Dates": ["Dates Ice Cream", "Dates"]},
-    "SUPREME AVIL MILK": {"Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam"], "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam"], "Royal": ["Fruit Mix", "Mango Ice Cream", "Cashew / Nuts", "Badam"], "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry"], "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam"], "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam"], "Choco Nut": ["Chocolate Ice Cream", "Chocolate", "Cashew / Nuts", "Badam"], "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam"], "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"], "Tender Coconut": ["Tender Ice Cream", "Cashew / Nuts", "Badam"], "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam"], "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam"], "Dry Fruits": ["Mango Ice Cream", "Dry Fruits", "Cashew / Nuts", "Badam"], "Special Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"]},
-    "DIET AVIL MIX": {"Normal Diet": [], "Fruit Diet": ["Fruit Mix"], "Fruit Nut Diet": ["Fruit Mix", "Cashew / Nuts", "Badam"], "Nuts Diet": ["Cashew / Nuts", "Badam"], "Dry Fruits Diet": ["Cashew / Nuts", "Dry Fruits", "Badam"]},
-    "CHEESEY CHIKEN": {"Chicken Club Sandwich": [], "Chicken Mini Sandwich": [], "Samoona": [], "Cheesy Chick Bake - Classic Medium": [], "Cheesy Chick Bake - Classic Large": [], "Cheesy Chick Bake - Schezwan Medium": [], "Cheesy Chick Bake - Schezwan Large": [], "Cheesy Chick Bake - BBQ Medium": [], "Cheesy Chick Bake - BBQ Large": [], "Cheesy Chick Bake - Mexican Medium": [], "Cheesy Chick Bake - Mexican Large": []},
-    "LIME": {"Fresh Lime": [], "Mexican Mint Lime": [], "Mint Lime": [], "Pineapple Lime": [], "Orange Lime": [], "Ginger Lime": []},
-    "MOJITO": {"Classic Mojito": [], "Mango Mojito": [], "Grapes Mojito": [], "Passion Mojito": [], "Pineapple Mojito": [], "Strawberry Mojito": []},
-    "FRUIT SHAKE": {"Banago": [], "Mangopass": [], "Chikudates": [], "Banatend": [], "Tendates": [], "Datifig": []},
-    "FRESH JUICE": {"Orange": [], "Watermelon": [], "Pineapple": [], "Pappaya": [], "Muskmelon": [], "Mosambi": []},
-    "FALOODA": {"Royal Banaloooda": ["Fruit Mix"], "Strawberry Banaloooda": ["Strawberry Ice Cream", "Strawberry"], "Chocolate Banaloooda": [], "Mango Banaloooda": ["Mango Ice Cream", "Mango"], "Pista Banaloooda": [], "Dry Fruit Banaloooda": []},
-    "CHOCOLATE SHAKE": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": ["Boost"], "Choco Coffee Charge": []},
-    "DOODH MALAI": {"Mix Fruit Malai": ["Fruit Mix"], "Mango Magic Malai": ["Mango"], "Chocolate Malai": [], "Seetaphal Malai": [], "Kiwi Malai": ["Kiwi"]},
-    "LASSI": {"Plain Lassi": [], "Mango Lassi": [], "Chocolate Lassi": [], "Mix Fruit Lassi": [], "Dry Nuts Lassi": [], "Dry Fruit Lassi": []}
+    "REGULAR AVIL MILK": {
+        "Mini": [], "Normal": [],
+        "Normal Boost": ["Boost"],
+        "Fruit": ["Fruit Mix"],
+        "Mango Passion": ["Mango"],
+        "White": ["Vanilla Ice Cream"],
+        "Special": ["Fruit Mix", "Vanilla Ice Cream"],
+        "SP Boost": ["Boost", "Vanilla Ice Cream"],
+    },
+    "LITTLE COMBO AVIL MILK": {
+        "Little Strawberry": ["Strawberry Ice Cream", "Strawberry"],
+        "Little Pista": ["Pista Ice Cream"],
+        "Little Mango": ["Mango Ice Cream", "Mango"],
+        "Little Arabian": ["Dates Ice Cream", "Dates"],
+        "Little Butterscotch": ["Butterscotch Ice Cream"],
+        "Little Choco": ["Chocolate Ice Cream", "Chocolate"],
+    },
+    "FUSION AVIL MILK": {
+        "Watermelon": ["Vanilla Ice Cream"],
+        "Rooh Afza": ["Vanilla Ice Cream"],
+        "Butterscotch": ["Butterscotch Ice Cream"],
+        "Pista": ["Pista Ice Cream"],
+        "Kiwi": ["Vanilla Ice Cream", "Kiwi"],
+        "Chocolate": ["Chocolate Ice Cream", "Chocolate"],
+        "Strawberry": ["Strawberry Ice Cream", "Strawberry"],
+        "Mango": ["Mango Ice Cream", "Mango"],
+        "Dates": ["Dates Ice Cream", "Dates"],
+    },
+    "SUPREME AVIL MILK": {
+        "Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam"],
+        "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam"],
+        "Royal": ["Fruit Mix", "Mango Ice Cream", "Cashew / Nuts", "Badam"],
+        "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry"],
+        "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam"],
+        "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam"],
+        "Choco Nut": ["Chocolate Ice Cream", "Chocolate", "Cashew / Nuts", "Badam"],
+        "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam"],
+        "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"],
+        "Tender Coconut": ["Tender Ice Cream", "Tender Cut Piece", "Cashew / Nuts", "Badam"],
+        "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam"],
+        "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam"],
+        "Dry Fruits": ["Mango Ice Cream", "Dry Fruits", "Cashew / Nuts", "Badam"],
+        "Special Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"],
+    },
+    "DIET AVIL MIX": {
+        "Normal Diet": ["Diet Milk"],
+        "Fruit Diet": ["Diet Milk", "Fruit Mix"],
+        "Fruit Nut Diet": ["Diet Milk", "Fruit Mix", "Cashew / Nuts", "Badam"],
+        "Nuts Diet": ["Diet Milk", "Cashew / Nuts", "Badam"],
+        "Dry Fruits Diet": ["Diet Milk", "Cashew / Nuts", "Dry Fruits", "Badam"],
+    },
+    "CHEESEY CHIKEN": {
+        "Chicken Club Sandwich": [], "Chicken Mini Sandwich": [], "Samoona": [],
+        "Cheesy Chick Bake - Classic Medium": [], "Cheesy Chick Bake - Classic Large": [],
+        "Cheesy Chick Bake - Schezwan Medium": [], "Cheesy Chick Bake - Schezwan Large": [],
+        "Cheesy Chick Bake - BBQ Medium": [], "Cheesy Chick Bake - BBQ Large": [],
+        "Cheesy Chick Bake - Mexican Medium": [], "Cheesy Chick Bake - Mexican Large": [],
+    },
+    "LIME": {
+        "Fresh Lime": ["Lemon"],
+        "Mexican Mint Lime": ["Lemon", "Mint", "Pineapple"],
+        "Mint Lime": ["Lemon", "Mint"],
+        "Pineapple Lime": ["Lemon", "Pineapple"],
+        "Orange Lime": ["Lemon", "Orange"],
+        "Ginger Lime": ["Lemon", "Ginger"],
+    },
+    "MOJITO": {
+        "Classic Mojito": ["Lemon", "Mint", "Sprite"],
+        "Mango Mojito": ["Lemon", "Mint", "Sprite"],
+        "Grapes Mojito": ["Lemon", "Mint", "Sprite", "Grapes Pulp"],
+        "Passion Mojito": ["Lemon", "Mint", "Sprite"],
+        "Pineapple Mojito": ["Lemon", "Mint", "Sprite", "Pineapple"],
+        "Strawberry Mojito": ["Lemon", "Mint", "Sprite", "Strawberry Pulp"],
+    },
+    "FRUIT SHAKE": {
+        "Banago": ["Shake Milk", "Banana"],
+        "Mangopass": ["Shake Milk", "Banana"],
+        "Chikudates": ["Shake Milk", "Banana"],
+        "Banatend": ["Shake Milk", "Tender Pulp", "Banana"],
+        "Tendates": ["Shake Milk", "Tender Pulp", "Banana"],
+        "Datifig": ["Shake Milk", "Banana"],
+    },
+    "FRESH JUICE": {
+        "Orange": ["Orange"],
+        "Watermelon": ["Watermelon"],
+        "Pineapple": ["Pineapple"],
+        "Pappaya": ["Papaya"],
+        "Muskmelon": ["Muskmelon"],
+        "Mosambi": ["Mosambi"],
+    },
+    "FALOODA": {
+        "Royal Banaloooda": ["Falooda", "Pista Ice Cream", "Vanilla Ice Cream", "Strawberry Ice Cream", "Mango Ice Cream"],
+        "Strawberry Banaloooda": ["Falooda", "Strawberry Ice Cream", "Vanilla Ice Cream", "Strawberry"],
+        "Chocolate Banaloooda": ["Falooda", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Mango Banaloooda": ["Falooda", "Mango Ice Cream", "Vanilla Ice Cream", "Mango"],
+        "Pista Banaloooda": ["Falooda", "Pista Ice Cream", "Vanilla Ice Cream"],
+        "Dry Fruit Banaloooda": ["Falooda", "Butterscotch Ice Cream", "Vanilla Ice Cream", "Mango Ice Cream", "Dry Fruits"],
+    },
+    "CHOCOLATE SHAKE": {
+        "Mississippi Mud": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Oreo Wonder": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Pie Melt": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Kitkat Smash": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Boost Blast": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream", "Boost"],
+        "Choco Coffee Charge": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+    },
+    "DOODH MALAI": {
+        "Mix Fruit Malai": ["Fresh Cream", "Mix Fruits"],
+        "Mango Magic Malai": ["Fresh Cream", "Mango"],
+        "Chocolate Malai": ["Fresh Cream"],
+        "Seetaphal Malai": ["Fresh Cream", "Seetaphal"],
+        "Kiwi Malai": ["Fresh Cream", "Kiwi"],
+    },
+    "LASSI": {
+        "Plain Lassi": [],
+        "Mango Lassi": ["Mango"],
+        "Chocolate Lassi": ["Chocolate"],
+        "Mix Fruit Lassi": ["Mix Fruits"],
+        "Dry Nuts Lassi": ["Cashew / Nuts", "Badam"],
+        "Dry Fruit Lassi": ["Dry Fruits"],
+    },
 }
 
 
@@ -640,7 +831,7 @@ def staff_live():
         for item,deps in items.items():
             ctrl=item_controls.get((category,item),{"enabled":True,"manual_status":"AUTO"})
             menu_status[category]["items"].append({"name":item,"status":item_status(deps,category,item,category_controls.get(category,True),ctrl),"enabled":ctrl.get("enabled",True),"manual_status":ctrl.get("manual_status","AUTO")})
-    return render_template_string(STAFF_LIVE_HTML,out_items=out_items,limited_items=limited_items,menu_status=menu_status,menu_out_alerts=menu_out_alerts,menu_limited_alerts=menu_limited_alerts)
+    return render_template_string(STAFF_LIVE_HTML,out_items=out_items,limited_items=limited_items,menu_status=menu_status,menu_out_alerts=menu_out_alerts,menu_limited_alerts=menu_limited_alerts,ingredient_categories=INGREDIENT_CATEGORIES,stock=stock)
 
 
 @app.route("/staff")
@@ -705,7 +896,9 @@ def staff():
         menu_status=menu_status,
         menu_out_alerts=menu_out_alerts,
         menu_limited_alerts=menu_limited_alerts,
-        history=latest_history
+        history=latest_history,
+        ingredient_categories=INGREDIENT_CATEGORIES,
+        stock=stock
     )
 
 
@@ -914,7 +1107,9 @@ def live():
     return render_template_string(KITCHEN_LIVE_HTML,
         out_items=out_items, limited_items=limited_items, available_main=available_main,
         menu_status=menu_status, menu_out_alerts=menu_out_alerts,
-        menu_limited_alerts=menu_limited_alerts)
+        menu_limited_alerts=menu_limited_alerts,
+        ingredient_categories=INGREDIENT_CATEGORIES,
+        stock=stock)
 
 
 # =========================
@@ -970,7 +1165,9 @@ def home():
         available_main=available_main,
         menu_status=menu_status,
         menu_out_alerts=menu_out_alerts,
-        menu_limited_alerts=menu_limited_alerts
+        menu_limited_alerts=menu_limited_alerts,
+        ingredient_categories=INGREDIENT_CATEGORIES,
+        stock=stock
     )
 
 
@@ -1000,7 +1197,7 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 .category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 3px;border-bottom:1px solid #eee}
 .green{color:green;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.red{color:red;font-weight:bold}.small{color:#777;font-size:13px}
 .category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
-.ingredient-alert{cursor:pointer}.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}.ingredient-alert summary::-webkit-details-marker{display:none}.ingredient-alert[open] summary{margin-bottom:10px}.ingredient-alert .dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:#f1f1f1}
+.ingredient-master-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.ingredient-master-category summary{cursor:pointer;padding:14px;font-weight:bold;font-size:16px;list-style:none;display:flex;justify-content:space-between}.ingredient-master-category summary::-webkit-details-marker{display:none}.ingredient-master-category[open] summary{border-bottom:1px solid #eee}.ingredient-master-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 3px;border-bottom:1px solid #eee}.ingredient-master-row .item-controls{white-space:nowrap}.ingredient-alert{cursor:pointer}.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}.ingredient-alert summary::-webkit-details-marker{display:none}.ingredient-alert[open] summary{margin-bottom:10px}.ingredient-alert .dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:#f1f1f1}
 .control-row{padding:8px 0;border-bottom:1px solid #eee}.item-controls{white-space:nowrap;text-align:right}
 .category-off-btn,.category-on-btn,.item-off-btn,.item-on-btn,.item-limited-btn{color:white;border:none;border-radius:7px;padding:7px 10px;font-weight:bold}
 .category-off-btn,.item-off-btn{background:#dc3545}.category-on-btn,.item-on-btn{background:#28a745}.item-limited-btn{background:#ffc107;color:#111!important}
@@ -1113,8 +1310,27 @@ KITCHEN_LIVE_HTML = """
 </div>
 
 <div class="section">
-<h2>🟢 AVAILABLE</h2>
-{% for x in available_main %}<div class="card available"><b>🟢 {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OUT</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="1"><button class="limited-btn">🟡 LIMITED (1)</button></form></div>{% endfor %}
+<h2>🧾 INGREDIENT MASTER</h2>
+<p class="small">Tap a category to expand/collapse. Every ingredient has ON / LIMITED / OFF control.</p>
+{% for cat, ingredients in ingredient_categories.items() %}
+<details class="ingredient-master-category" data-key="ingredient-category-{{ cat|e }}">
+<summary><b>{{ cat }}</b><span>›</span></summary>
+<div class="category-items">
+{% for name in ingredients %}
+{% set st = stock[name]["status"] %}
+{% set q = stock[name].get("qty","") %}
+<div class="ingredient-master-row">
+<div><b>{{ name }}</b><br><span class="{{ 'green' if st == 'AVAILABLE' else 'yellow' if st == 'LIMITED' else 'red' }}">{{ '🟢 ON / AVAILABLE' if st == 'AVAILABLE' else '🟡 LIMITED' if st == 'LIMITED' else '🔴 OUT' }}</span>{% if st == 'LIMITED' %} <span class="qty-number">{{ q }}</span>{% endif %}</div>
+<div class="item-controls">
+{% if st != 'AVAILABLE' %}<form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ name }}"><input type="hidden" name="status" value="AVAILABLE"><button class="item-on-btn">🟢 ON</button></form>{% endif %}
+{% if st == 'LIMITED' %}<form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ name }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ q|int + 1 }}"><button class="item-limited-btn">＋</button></form><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ name }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ q|int - 1 }}"><button class="qty-btn">−</button></form>{% else %}<form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ name }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="1"><button class="item-limited-btn">🟡 LIMITED</button></form>{% endif %}
+{% if st != 'OUT' %}<form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ name }}"><input type="hidden" name="status" value="OUT"><button class="out-btn">🔴 OFF</button></form>{% endif %}
+</div>
+</div>
+{% endfor %}
+</div>
+</details>
+{% endfor %}
 </div>
 
 <div class="section">
