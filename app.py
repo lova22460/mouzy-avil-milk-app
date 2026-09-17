@@ -357,7 +357,7 @@ def menu_alerts():
                 limited_items.append({"item": item, "qty": int(control.get("qty", 1) or 1)})
 
         if out_names:
-            out_alerts.append({"category": category, "item": None, "items": out_names})
+            out_alerts.append({"category": category, "item": out_names[0], "items": out_names})
         if limited_items:
             limited_alerts.append({"category": category, "items": limited_items})
 
@@ -1000,6 +1000,7 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 .category-items{padding:0 12px 8px}.menu-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 3px;border-bottom:1px solid #eee}
 .green{color:green;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.red{color:red;font-weight:bold}.small{color:#777;font-size:13px}
 .category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+.ingredient-alert{cursor:pointer}.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}.ingredient-alert summary::-webkit-details-marker{display:none}.ingredient-alert[open] summary{margin-bottom:10px}.ingredient-alert .dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:#f1f1f1}
 .control-row{padding:8px 0;border-bottom:1px solid #eee}.item-controls{white-space:nowrap;text-align:right}
 .category-off-btn,.category-on-btn,.item-off-btn,.item-on-btn,.item-limited-btn{color:white;border:none;border-radius:7px;padding:7px 10px;font-weight:bold}
 .category-off-btn,.item-off-btn{background:#dc3545}.category-on-btn,.item-on-btn{background:#28a745}.item-limited-btn{background:#ffc107;color:#111!important}
@@ -1177,7 +1178,7 @@ refreshStaff();setInterval(refreshStaff,1000);
 
 STAFF_LIVE_HTML = """
 <div class="section"><h2 class="red">🔴 OUT OF STOCK</h2>
-{% if out_items or menu_out_alerts %}{% for x in out_items %}<div class="card"><b>❌ {{ x["name"] }}</b>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_out_alerts %}
+{% if out_items or menu_out_alerts %}{% for x in out_items %}<details class="card out ingredient-alert" data-key="staff-ingredient-out-{{ x["name"]|e }}"><summary><b>❌ {{ x["name"] }}</b><span>›</span></summary>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="red">🔴 CLOSED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}{% for a in menu_out_alerts %}
 <details class="card out ingredient-alert" data-key="staff-menu-out-{{ a["category"] }}">
 <summary><b>🔴 {{ a["category"] }}</b><span>›</span></summary>
 {% if a["item"] is none %}
@@ -1189,12 +1190,12 @@ STAFF_LIVE_HTML = """
 {% endfor %}{% else %}<p>✅ Nothing is OUT.</p>{% endif %}</div>
 
 <div class="section"><h2 class="yellow">🟡 LIMITED</h2>
-{% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_limited_alerts %}
-<div class="card"><b>🟡 {{ a["category"] }}</b>
+{% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<details class="card limited ingredient-alert" data-key="staff-ingredient-limited-{{ x["name"]|e }}"><summary><b>⚠️ {{ x["name"] }}</b><span class="qty-number">{{ x["qty"] }}</span></summary>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="yellow">🟡 LIMITED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}{% for a in menu_limited_alerts %}
+<details class="card limited ingredient-alert" data-key="staff-menu-limited-{{ a["category"] }}"><summary><b>🟡 {{ a["category"] }}</b><span>›</span></summary>
 {% for mi in a["items"] %}
 <div class="dependency-line">→ {{ mi["item"] }} — LIMITED {{ mi["qty"] }}</div>
 {% endfor %}
-</div>
+</details>
 {% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
