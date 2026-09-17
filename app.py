@@ -1021,9 +1021,16 @@ async function refreshKitchen(){
   try{
     const r=await fetch('/live',{cache:'no-store'}); if(!r.ok)return;
     const root=document.getElementById('kitchen-live-root');
-    const open=Array.from(root.querySelectorAll('details[open]')).map(d=>d.dataset.category);
+    const open=Array.from(root.querySelectorAll('details[open]'))
+      .map(d=>d.dataset.key || d.dataset.category || d.dataset.ingredient)
+      .filter(Boolean);
     root.innerHTML=await r.text();
-    open.forEach(cat=>{const d=root.querySelector('details[data-category="'+CSS.escape(cat)+'"]');if(d)d.open=true;});
+    open.forEach(key=>{
+      const d=Array.from(root.querySelectorAll('details')).find(x=>
+        (x.dataset.key || x.dataset.category || x.dataset.ingredient)===key
+      );
+      if(d)d.open=true;
+    });
   }catch(e){}
 }
 const kitchenRoot=document.getElementById('kitchen-live-root');
@@ -1081,7 +1088,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
-{% for x in out_items %}<details class="card out ingredient-alert"><summary><b>🔴 {{ x["name"] }}</b></summary><div class="ingredient-actions"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="red">🔴 CLOSED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
+{% for x in out_items %}<details class="card out ingredient-alert" data-key="ingredient-out-{{ x["name"]|e }}"><summary><b>🔴 {{ x["name"] }}</b></summary><div class="ingredient-actions"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="red">🔴 CLOSED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
 {% for a in menu_out_alerts %}<div class="card out">
 <b>🔴 {{ a["category"] }}</b>
 {% if a["item"] is none %}
@@ -1096,7 +1103,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
-{% for x in limited_items %}<details class="card limited ingredient-alert"><summary><b>🟡 {{ x["name"] }}</b> <span class="qty-number">{{ x["qty"] }}</span></summary><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="yellow">🟡 LIMITED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
+{% for x in limited_items %}<details class="card limited ingredient-alert" data-key="ingredient-limited-{{ x["name"]|e }}"><summary><b>🟡 {{ x["name"] }}</b> <span class="qty-number">{{ x["qty"] }}</span></summary><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="yellow">🟡 LIMITED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
 {% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }}</b>{% for mi in a["items"] %}<div style="margin-top:8px"><b>→ {{ mi["item"] }}</b><div class="qty-row"><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="MINUS"><button class="qty-btn">−</button></form><span class="qty-number">{{ mi["qty"] }}</span><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="PLUS"><button class="qty-btn">+</button></form><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div></div>{% endfor %}</div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
@@ -1110,7 +1117,7 @@ KITCHEN_LIVE_HTML = """
 <h2>🥤 MENU STRUCTURE</h2>
 <p class="small">All categories are collapsed by default. Changes update live every 1 second.</p>
 {% for category,data in menu_status.items() %}
-<details class="menu-category" data-category="{{ category }}">
+<details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}">
 <summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary>
 <div class="category-items">
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
@@ -1149,9 +1156,16 @@ async function refreshStaff(){
  try{
   const r=await fetch('/staff-live',{cache:'no-store'});if(!r.ok)return;
   const root=document.getElementById('staff-live-root');
-  const open=Array.from(root.querySelectorAll('details[open]')).map(d=>d.dataset.category);
+  const open=Array.from(root.querySelectorAll('details[open]'))
+     .map(d=>d.dataset.key || d.dataset.category || d.dataset.ingredient)
+     .filter(Boolean);
   root.innerHTML=await r.text();
-  open.forEach(cat=>{const d=root.querySelector('details[data-category="'+CSS.escape(cat)+'"]');if(d)d.open=true;});
+  open.forEach(key=>{
+    const d=Array.from(root.querySelectorAll('details')).find(x=>
+      (x.dataset.key || x.dataset.category || x.dataset.ingredient)===key
+    );
+    if(d)d.open=true;
+   });
  }catch(e){}
 }
 refreshStaff();setInterval(refreshStaff,1000);
@@ -1166,7 +1180,7 @@ STAFF_LIVE_HTML = """
 {% if limited_items or menu_limited_alerts %}{% for x in limited_items %}<div class="card"><b>⚠️ {{ x["name"] }}</b>{% if x["qty"] %} | Quantity: <b>{{ x["qty"] }}</b>{% endif %}{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}{% for a in menu_limited_alerts %}<div class="card"><b>🟡 {{ a["category"] }} → {{ a["item"] }}</b></div>{% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
-{% for category,data in menu_status.items() %}<details class="menu-category" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
+{% for category,data in menu_status.items() %}<details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
 {% for item in data["items"] %}<div class="menu-item"><span><b>{{ item["name"] }}</b></span><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
 </div></details>{% endfor %}</div>
 """
