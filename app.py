@@ -94,153 +94,79 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 # =========================
 # STOCK
 # =========================
-
-stock = { 
-    "Mango": {"status": "AVAILABLE", "qty": ""},
-    "Boost": {"status": "AVAILABLE", "qty": ""},
-    "Strawberry": {"status": "AVAILABLE", "qty": ""},
-    "Dates": {"status": "AVAILABLE", "qty": ""},
-    "Kiwi": {"status": "AVAILABLE", "qty": ""},
-    "Blueberry Dry": {"status": "AVAILABLE", "qty": ""},
-    "Tender": {"status": "AVAILABLE", "qty": ""},
-    "Dry Fruits": {"status": "AVAILABLE", "qty": ""},
-
-    "Vanilla Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Strawberry Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Pista Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Mango Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Butterscotch Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Chocolate Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Dates Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Spanish Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Tender Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Blueberry Ice Cream": {"status": "AVAILABLE", "qty": ""},
-    "Chocolate": {"status": "AVAILABLE", "qty": ""},
-    "Fruit Mix": {"status": "AVAILABLE", "qty": ""},
-    "Cashew / Nuts": {"status": "AVAILABLE", "qty": ""},
-    "Badam": {"status": "AVAILABLE", "qty": ""},
-
-    "Fresh Cream": {"status": "AVAILABLE", "qty": ""},
-    "Shake Milk": {"status": "AVAILABLE", "qty": ""},
-    "Diet Milk": {"status": "AVAILABLE", "qty": ""},
-    "Tender Cut Piece": {"status": "AVAILABLE", "qty": ""},
-
-    "Pineapple": {"status": "AVAILABLE", "qty": ""},
-    "Orange": {"status": "AVAILABLE", "qty": ""},
-    "Papaya": {"status": "AVAILABLE", "qty": ""},
-    "Muskmelon": {"status": "AVAILABLE", "qty": ""},
-    "Mosambi": {"status": "AVAILABLE", "qty": ""},
-    "Seetaphal": {"status": "AVAILABLE", "qty": ""},
-    "Watermelon": {"status": "AVAILABLE", "qty": ""},
-    "Mix Fruits": {"status": "AVAILABLE", "qty": ""},
-
-    "Tender Pulp": {"status": "AVAILABLE", "qty": ""},
-    "Strawberry Pulp": {"status": "AVAILABLE", "qty": ""},
-    "Grapes Pulp": {"status": "AVAILABLE", "qty": ""},
-
-    "Lemon": {"status": "AVAILABLE", "qty": ""},
-    "Mint": {"status": "AVAILABLE", "qty": ""},
-    "Ginger": {"status": "AVAILABLE", "qty": ""},
-    "Sprite": {"status": "AVAILABLE", "qty": ""},
-    "Falooda": {"status": "AVAILABLE", "qty": ""},
-    "Banana": {"status": "AVAILABLE", "qty": ""},
-}
-init_db()
-def load_stock_from_db():
-    global stock
-
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT ingredient, status, qty FROM stock")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    stock = {
-        row["ingredient"]: {
-            "status": row["status"],
-            "qty": row["qty"]
-        }
-        for row in rows
-    }
-
-
-load_stock_from_db()
+# The database is seeded from the final ingredient master below.
+stock = {}
 
 # =========================
 # MAIN INGREDIENTS
 # =========================
 
 INGREDIENT_CATEGORIES = {
-    "MILK / DAIRY": [
-        "Fresh Cream",
-        "Shake Milk",
-        "Diet Milk",
-        "Tender Cut Piece",
+    "SINGLE INGREDIENTS": [
+        "Fruit Mix", "Boost", "Dates", "Blueberry Dry", "Dry Fruits",
+        "Chocolate", "Cashew / Nuts", "Badam", "Chocos", "Spanish chips",
+        "Chocolate Chips", "White Chips", "Cherry",
     ],
+
+    "MILK / DAIRY": [
+        "Fresh Cream", "Shake Milk", "Diet Milk",
+    ],
+
     "ICE CREAM": [
-        "Vanilla Ice Cream",
-        "Chocolate Ice Cream",
-        "Mango Ice Cream",
-        "Strawberry Ice Cream",
-        "Pista Ice Cream",
-        "Butterscotch Ice Cream",
-        "Spanish Ice Cream",
-        "Dates Ice Cream",
-        "Tender Ice Cream",
+        "Vanilla Ice Cream", "Chocolate Ice Cream", "Mango Ice Cream",
+        "Strawberry Ice Cream", "Pista Ice Cream", "Butterscotch Ice Cream",
+        "Spanish Ice Cream", "Dates Ice Cream", "Tender Ice Cream",
         "Blueberry Ice Cream",
     ],
+
     "FRESH FRUITS": [
-        "Mango",
-        "Strawberry",
-        "Kiwi",
-        "Pineapple",
-        "Orange",
-        "Papaya",
-        "Muskmelon",
-        "Mosambi",
-        "Seetaphal",
-        "Watermelon",
-        "Mix Fruits",
+        "Tender Cut Piece",
+        "Pineapple", "Orange", "Mango", "Strawberry", "Blueberry",
+        "Kiwi", "Lemon", "Papaya", "Muskmelon", "Mosambi", "Seetaphal",
+        "Watermelon", "Mix Fruits", "Robest banana", "Big banana",
     ],
+
     "PULP": [
-        "Tender Pulp",
-        "Strawberry Pulp",
+        "Tender Pulp", "Mango Pulp", "Dates Pulp", "Passion Pulp",
+        "Pineapple Pulp", "Chiku Pulp", "Fig Pulp", "Strawberry Pulp",
         "Grapes Pulp",
     ],
+
     "LIME": [
-        "Lemon",
-        "Mint",
-        "Ginger",
-        "Pineapple",
+        "Mint", "Ginger",
     ],
+
     "MOJITO": [
         "Sprite",
     ],
+
     "FALOODA": [
-        "Falooda",
+        "Falooda", "Kaskas", "Semia",
     ],
-    "SINGLE INGREDIENTS": [
-        "Boost",
-        "Mango",
-        "Strawberry",
-        "Dates",
-        "Kiwi",
-        "Blueberry Dry",
-        "Dry Fruits",
-        "Tender",
-        "Chocolate",
-        "Fruit Mix",
-        "Cashew / Nuts",
-        "Badam",
+
+    "CHOCOLATE SHAKE ITEMS": [
+        "Coffee", "Oreo", "Kitkat", "Choco Pie", "Brownie",
+    ],
+
+    "CHEESEY CHIKEN": [
+        "Bread", "Samoona", "Chicken", "Mayonnaisse", "White Mayonnaise",
+        "Slices", "Mozzarella Cheese", "Butter", "Green Sauce", "BBQ Sauce",
+        "Mexican Sauce", "Schezwan Sauce", "Spring Onion", "Red Capsicum",
+        "Black Olives", "Black Seeds", "White Seeds", "Dried Oregano",
+        "Chilli Flakes",
+    ],
+
+    "SYRUPS": [
+        "Passion Syrup", "Rose syrup", "Strawberry Syrup", "Mango Syrup",
+        "Pista Syrup", "Chocolate Syrup", "Butterscotch Syrup",
     ],
 }
 
-MAIN_INGREDIENTS = [
-    ingredient
-    for ingredients in INGREDIENT_CATEGORIES.values()
-    for ingredient in ingredients
-]
+MAIN_INGREDIENTS = []
+for _names in INGREDIENT_CATEGORIES.values():
+    for _name in _names:
+        if _name not in MAIN_INGREDIENTS:
+            MAIN_INGREDIENTS.append(_name)
 
 
 # =========================
@@ -249,33 +175,37 @@ MAIN_INGREDIENTS = [
 
 menu = {
     "REGULAR AVIL MILK": {
-        "Mini": [], "Normal": [],
+        "Mini": [],
+        "Normal": [],
         "Normal Boost": ["Boost"],
         "Fruit": ["Fruit Mix"],
-        "Mango Passion": ["Mango"],
-        "White": ["Vanilla Ice Cream"],
+        "Mango Passion": ["Mango", "Passion Syrup"],
+        "White": ["Vanilla Ice Cream", "White Chips"],
         "Special": ["Fruit Mix", "Vanilla Ice Cream"],
         "SP Boost": ["Boost", "Vanilla Ice Cream"],
     },
+
     "LITTLE COMBO AVIL MILK": {
         "Little Strawberry": ["Strawberry Ice Cream", "Strawberry"],
         "Little Pista": ["Pista Ice Cream"],
         "Little Mango": ["Mango Ice Cream", "Mango"],
         "Little Arabian": ["Dates Ice Cream", "Dates"],
         "Little Butterscotch": ["Butterscotch Ice Cream"],
-        "Little Choco": ["Chocolate Ice Cream", "Chocolate"],
+        "Little Choco": ["Chocolate Ice Cream", "Chocos"],
     },
+
     "FUSION AVIL MILK": {
-        "Watermelon": ["Vanilla Ice Cream"],
-        "Rooh Afza": ["Vanilla Ice Cream"],
+        "Watermelon": ["Vanilla Ice Cream", "Watermelon"],
+        "Rooh Afza": ["Vanilla Ice Cream", "Watermelon"],
         "Butterscotch": ["Butterscotch Ice Cream"],
         "Pista": ["Pista Ice Cream"],
         "Kiwi": ["Vanilla Ice Cream", "Kiwi"],
-        "Chocolate": ["Chocolate Ice Cream", "Chocolate"],
+        "Chocolate": ["Chocolate Ice Cream", "Chocolate Chips"],
         "Strawberry": ["Strawberry Ice Cream", "Strawberry"],
         "Mango": ["Mango Ice Cream", "Mango"],
         "Dates": ["Dates Ice Cream", "Dates"],
     },
+
     "SUPREME AVIL MILK": {
         "Nuts": ["Butterscotch Ice Cream", "Cashew / Nuts", "Badam"],
         "Fruit Nut": ["Fruit Mix", "Vanilla Ice Cream", "Cashew / Nuts", "Badam"],
@@ -283,15 +213,16 @@ menu = {
         "Redberry Nut": ["Fruit Mix", "Vanilla Ice Cream", "Strawberry Ice Cream", "Cashew / Nuts", "Badam", "Strawberry"],
         "Malgoa Nut": ["Mango Ice Cream", "Mango", "Cashew / Nuts", "Badam"],
         "Pista Nut": ["Fruit Mix", "Vanilla Ice Cream", "Pista Ice Cream", "Cashew / Nuts", "Badam"],
-        "Choco Nut": ["Chocolate Ice Cream", "Chocolate", "Cashew / Nuts", "Badam"],
+        "Choco Nut": ["Chocolate Ice Cream", "Chocos", "Cashew / Nuts", "Badam"],
         "Rio Nut": ["Fruit Mix", "Pista Ice Cream", "Mango Ice Cream", "Cashew / Nuts", "Badam"],
-        "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"],
+        "Spanish Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam", "Spanish chips"],
         "Tender Coconut": ["Tender Ice Cream", "Tender Cut Piece", "Cashew / Nuts", "Badam"],
-        "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam"],
+        "Blueberry Nut": ["Blueberry Ice Cream", "Cashew / Nuts", "Badam", "Blueberry Dry"],
         "Arabian Nut": ["Dates Ice Cream", "Dates", "Cashew / Nuts", "Badam"],
         "Dry Fruits": ["Mango Ice Cream", "Dry Fruits", "Cashew / Nuts", "Badam"],
         "Special Nut": ["Spanish Ice Cream", "Cashew / Nuts", "Badam"],
     },
+
     "DIET AVIL MIX": {
         "Normal Diet": ["Diet Milk"],
         "Fruit Diet": ["Diet Milk", "Fruit Mix"],
@@ -299,13 +230,21 @@ menu = {
         "Nuts Diet": ["Diet Milk", "Cashew / Nuts", "Badam"],
         "Dry Fruits Diet": ["Diet Milk", "Cashew / Nuts", "Dry Fruits", "Badam"],
     },
+
     "CHEESEY CHIKEN": {
-        "Chicken Club Sandwich": [], "Chicken Mini Sandwich": [], "Samoona": [],
-        "Cheesy Chick Bake - Classic Medium": [], "Cheesy Chick Bake - Classic Large": [],
-        "Cheesy Chick Bake - Schezwan Medium": [], "Cheesy Chick Bake - Schezwan Large": [],
-        "Cheesy Chick Bake - BBQ Medium": [], "Cheesy Chick Bake - BBQ Large": [],
-        "Cheesy Chick Bake - Mexican Medium": [], "Cheesy Chick Bake - Mexican Large": [],
+        "Chicken Club Sandwich": ["Bread", "Chicken", "Mayonnaisse", "Slices", "Butter"],
+        "Chicken Mini Sandwich": ["Bread", "Chicken", "Mayonnaisse", "Slices", "Butter"],
+        "Samoona": ["Samoona", "Chicken", "Mayonnaisse", "Slices", "Butter"],
+        "Cheesy Chick Bake - Classic Medium": ["Bread", "Green Sauce", "Chicken", "Mozzarella Cheese", "White Mayonnaise", "Spring Onion", "Red Capsicum"],
+        "Cheesy Chick Bake - Classic Large": ["Bread", "Green Sauce", "Chicken", "Mozzarella Cheese", "White Mayonnaise", "Spring Onion", "Red Capsicum"],
+        "Cheesy Chick Bake - Schezwan Medium": ["Bread", "Schezwan Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "Red Capsicum", "Chilli Flakes"],
+        "Cheesy Chick Bake - Schezwan Large": ["Bread", "Schezwan Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "Red Capsicum", "Chilli Flakes"],
+        "Cheesy Chick Bake - BBQ Medium": ["Bread", "BBQ Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "Black Seeds", "Black Olives"],
+        "Cheesy Chick Bake - BBQ Large": ["Bread", "BBQ Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "Black Seeds", "Black Olives"],
+        "Cheesy Chick Bake - Mexican Medium": ["Bread", "Mexican Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "White Seeds", "Dried Oregano"],
+        "Cheesy Chick Bake - Mexican Large": ["Bread", "Mexican Sauce", "Chicken", "Mozzarella Cheese", "Spring Onion", "White Seeds", "Dried Oregano"],
     },
+
     "LIME": {
         "Fresh Lime": ["Lemon"],
         "Mexican Mint Lime": ["Lemon", "Mint", "Pineapple"],
@@ -314,22 +253,25 @@ menu = {
         "Orange Lime": ["Lemon", "Orange"],
         "Ginger Lime": ["Lemon", "Ginger"],
     },
+
     "MOJITO": {
         "Classic Mojito": ["Lemon", "Mint", "Sprite"],
-        "Mango Mojito": ["Lemon", "Mint", "Sprite"],
+        "Mango Mojito": ["Lemon", "Mint", "Sprite", "Mango Pulp"],
         "Grapes Mojito": ["Lemon", "Mint", "Sprite", "Grapes Pulp"],
-        "Passion Mojito": ["Lemon", "Mint", "Sprite"],
-        "Pineapple Mojito": ["Lemon", "Mint", "Sprite", "Pineapple"],
+        "Passion Mojito": ["Lemon", "Mint", "Sprite", "Passion Pulp"],
+        "Pineapple Mojito": ["Lemon", "Mint", "Sprite", "Pineapple Pulp"],
         "Strawberry Mojito": ["Lemon", "Mint", "Sprite", "Strawberry Pulp"],
     },
+
     "FRUIT SHAKE": {
-        "Banago": ["Shake Milk", "Banana"],
-        "Mangopass": ["Shake Milk", "Banana"],
-        "Chikudates": ["Shake Milk", "Banana"],
-        "Banatend": ["Shake Milk", "Tender Pulp", "Banana"],
-        "Tendates": ["Shake Milk", "Tender Pulp", "Banana"],
-        "Datifig": ["Shake Milk", "Banana"],
+        "Banago": ["Shake Milk", "Robest banana", "Mango Pulp"],
+        "Mangopass": ["Shake Milk", "Robest banana", "Mango Pulp", "Passion Pulp"],
+        "Chikudates": ["Shake Milk", "Robest banana", "Chiku Pulp", "Dates Pulp"],
+        "Banatend": ["Shake Milk", "Tender Pulp", "Robest banana"],
+        "Tendates": ["Shake Milk", "Tender Pulp", "Robest banana", "Dates Pulp"],
+        "Datifig": ["Shake Milk", "Robest banana", "Dates Pulp", "Fig Pulp"],
     },
+
     "FRESH JUICE": {
         "Orange": ["Orange"],
         "Watermelon": ["Watermelon"],
@@ -338,34 +280,38 @@ menu = {
         "Muskmelon": ["Muskmelon"],
         "Mosambi": ["Mosambi"],
     },
+
     "FALOODA": {
-        "Royal Banaloooda": ["Falooda", "Pista Ice Cream", "Vanilla Ice Cream", "Strawberry Ice Cream", "Mango Ice Cream"],
-        "Strawberry Banaloooda": ["Falooda", "Strawberry Ice Cream", "Vanilla Ice Cream", "Strawberry"],
-        "Chocolate Banaloooda": ["Falooda", "Chocolate Ice Cream", "Vanilla Ice Cream"],
-        "Mango Banaloooda": ["Falooda", "Mango Ice Cream", "Vanilla Ice Cream", "Mango"],
-        "Pista Banaloooda": ["Falooda", "Pista Ice Cream", "Vanilla Ice Cream"],
-        "Dry Fruit Banaloooda": ["Falooda", "Butterscotch Ice Cream", "Vanilla Ice Cream", "Mango Ice Cream", "Dry Fruits"],
+        "Royal Banaloooda": ["Falooda", "Pista Ice Cream", "Vanilla Ice Cream", "Strawberry Ice Cream", "Kaskas", "Semia", "Big banana", "Fruit Mix", "Cashew / Nuts", "Badam", "Rose syrup", "Mango Ice Cream", "Cherry"],
+        "Strawberry Banaloooda": ["Falooda", "Strawberry Syrup", "Strawberry Ice Cream", "Vanilla Ice Cream", "Kaskas", "Semia", "Big banana", "Cashew / Nuts", "Badam", "Strawberry", "Cherry"],
+        "Chocolate Banaloooda": ["Falooda", "Chocolate Syrup", "Chocolate Ice Cream", "Vanilla Ice Cream", "Kaskas", "Semia", "Big banana", "Cashew / Nuts", "Badam", "Chocolate Chips", "Cherry"],
+        "Mango Banaloooda": ["Falooda", "Mango Syrup", "Mango Ice Cream", "Vanilla Ice Cream", "Kaskas", "Semia", "Big banana", "Cashew / Nuts", "Badam", "Mango", "Cherry"],
+        "Pista Banaloooda": ["Falooda", "Pista Syrup", "Pista Ice Cream", "Vanilla Ice Cream", "Kaskas", "Semia", "Big banana", "Cashew / Nuts", "Badam", "Cherry"],
+        "Dry Fruit Banaloooda": ["Falooda", "Butterscotch Syrup", "Butterscotch Ice Cream", "Vanilla Ice Cream", "Kaskas", "Semia", "Big banana", "Cashew / Nuts", "Badam", "Mango Ice Cream", "Dry Fruits", "Cherry"],
     },
+
     "CHOCOLATE SHAKE": {
-        "Mississippi Mud": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
-        "Oreo Wonder": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
-        "Pie Melt": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
-        "Kitkat Smash": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
-        "Boost Blast": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream", "Boost"],
-        "Choco Coffee Charge": ["Shake Milk", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Mississippi Mud": ["Shake Milk", "Chocolate Syrup", "Brownie", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Oreo Wonder": ["Shake Milk", "Chocolate Syrup", "Oreo", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Pie Melt": ["Shake Milk", "Chocolate Syrup", "Choco Pie", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Kitkat Smash": ["Shake Milk", "Chocolate Syrup", "Kitkat", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Boost Blast": ["Shake Milk", "Chocolate Syrup", "Boost", "Chocolate Ice Cream", "Vanilla Ice Cream"],
+        "Choco Coffee Charge": ["Shake Milk", "Chocolate Syrup", "Coffee", "Chocolate Ice Cream", "Vanilla Ice Cream"],
     },
+
     "DOODH MALAI": {
-        "Mix Fruit Malai": ["Fresh Cream", "Mix Fruits"],
-        "Mango Magic Malai": ["Fresh Cream", "Mango"],
-        "Chocolate Malai": ["Fresh Cream"],
-        "Seetaphal Malai": ["Fresh Cream", "Seetaphal"],
-        "Kiwi Malai": ["Fresh Cream", "Kiwi"],
+        "Mix Fruit Malai": ["Fresh Cream", "Fruit Mix", "Cashew / Nuts"],
+        "Mango Magic Malai": ["Fresh Cream", "Mango", "Cashew / Nuts"],
+        "Chocolate Malai": ["Fresh Cream", "Kitkat", "Cashew / Nuts"],
+        "Seetaphal Malai": ["Fresh Cream", "Seetaphal", "Cashew / Nuts"],
+        "Kiwi Malai": ["Fresh Cream", "Kiwi", "Cashew / Nuts"],
     },
+
     "LASSI": {
         "Plain Lassi": [],
         "Mango Lassi": ["Mango"],
         "Chocolate Lassi": ["Chocolate"],
-        "Mix Fruit Lassi": ["Mix Fruits"],
+        "Mix Fruit Lassi": ["Fruit Mix"],
         "Dry Nuts Lassi": ["Cashew / Nuts", "Badam"],
         "Dry Fruit Lassi": ["Dry Fruits"],
     },
@@ -478,7 +424,22 @@ def load_menu_controls():
     return categories, items
 
 
-init_menu_controls()
+
+# Final master seed/load. This runs only after INGREDIENT_CATEGORIES and menu
+# are fully defined, so every dependency has a persistent DB row.
+for _category_items in menu.values():
+    for _deps in _category_items.values():
+        for _dep in _deps:
+            if _dep not in MAIN_INGREDIENTS:
+                MAIN_INGREDIENTS.append(_dep)
+
+for _dep in MAIN_INGREDIENTS:
+    if _dep not in stock:
+        stock[_dep] = {"status": "AVAILABLE", "qty": ""}
+
+init_db()
+load_stock_from_db()
+
 
 
 def effective_item_status(category, item, dependencies, category_enabled=None, item_control=None):
