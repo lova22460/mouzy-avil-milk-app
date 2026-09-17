@@ -174,9 +174,9 @@ menu = {
     "MOJITO": {"Classic Mojito": [], "Mango Mojito": [], "Grapes Mojito": [], "Passion Mojito": [], "Pineapple Mojito": [], "Strawberry Mojito": []},
     "FRUIT SHAKE": {"Banago": [], "Mangopass": [], "Chikudates": [], "Banatend": [], "Tendates": [], "Datifig": []},
     "FRESH JUICE": {"Orange": [], "Watermelon": [], "Pineapple": [], "Pappaya": [], "Muskmelon": [], "Mosambi": []},
-    "FALOODA": {"Royal Banaloooda": [], "Strawberry Banaloooda": [], "Chocolate Banaloooda": [], "Mango Banaloooda": [], "Pista Banaloooda": [], "Dry Fruit Banaloooda": []},
+    "FALOODA": {"Royal Banaloooda": ["Fruit Mix"], "Strawberry Banaloooda": ["Strawberry Ice Cream", "Strawberry"], "Chocolate Banaloooda": [], "Mango Banaloooda": ["Mango Ice Cream", "Mango"], "Pista Banaloooda": [], "Dry Fruit Banaloooda": []},
     "CHOCOLATE SHAKE": {"Mississippi Mud": [], "Oreo Wonder": [], "Pie Melt": [], "Kitkat Smash": [], "Boost Blast": ["Boost"], "Choco Coffee Charge": []},
-    "DOODH MALAI": {"Mix Fruit Malai": [], "Mango Magic Malai": [], "Chocolate Malai": [], "Seetaphal Malai": [], "Kiwi Malai": []},
+    "DOODH MALAI": {"Mix Fruit Malai": ["Fruit Mix"], "Mango Magic Malai": ["Mango"], "Chocolate Malai": [], "Seetaphal Malai": [], "Kiwi Malai": ["Kiwi"]},
     "LASSI": {"Plain Lassi": [], "Mango Lassi": [], "Chocolate Lassi": [], "Mix Fruit Lassi": [], "Dry Nuts Lassi": [], "Dry Fruit Lassi": []}
 }
 
@@ -567,35 +567,7 @@ def history():
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Stock History</title>
 
-        <style>
-            body {
-                font-family: Arial;
-                padding: 20px;
-                background: #f5f5f5;
-            }
-
-            h2 {
-                text-align: center;
-            }
-
-            .history {
-                background: white;
-                padding: 12px;
-                margin: 10px 0;
-                border-radius: 10px;
-            }
-
-            .item {
-                font-weight: bold;
-                font-size: 18px;
-            }
-
-            .time {
-                color: #777;
-                font-size: 13px;
-                margin-top: 5px;
-            }
-        </style>
+        
     </head>
     <meta http-equiv="refresh" content="1">
     </head>
@@ -1092,12 +1064,24 @@ refreshKitchen();setInterval(refreshKitchen,1000);
 </html>
 """
 
+
 KITCHEN_LIVE_HTML = """
+<style>
+.ingredient-alert{cursor:pointer;}
+.ingredient-alert summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.ingredient-alert summary::-webkit-details-marker{display:none;}
+.ingredient-alert[open] summary{margin-bottom:10px;}
+.affected-title{font-weight:700;margin:8px 0;}
+.dependency-group{margin:8px 0;padding:8px 10px;border-radius:10px;background:rgba(127,127,127,.08);}
+.dependency-group>div{margin-top:5px;}
+.ingredient-actions{margin:8px 0;}
+</style>
+
 
 <div class="section">
 <h2>🔴 OUT OF STOCK</h2>
 {% if out_items or menu_out_alerts %}
-{% for x in out_items %}<div class="card out"><b>❌ {{ x["name"] }}</b><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
+{% for x in out_items %}<details class="card out ingredient-alert"><summary><b>🔴 {{ x["name"] }}</b></summary><div class="ingredient-actions"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="red">🔴 CLOSED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
 {% for a in menu_out_alerts %}<div class="card out">
 <b>🔴 {{ a["category"] }}</b>
 {% if a["item"] is none %}
@@ -1112,7 +1096,7 @@ KITCHEN_LIVE_HTML = """
 <div class="section">
 <h2>🟡 LIMITED</h2>
 {% if limited_items or menu_limited_alerts %}
-{% for x in limited_items %}<div class="card limited"><b>⚠️ {{ x["name"] }}</b><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% for g in x["affected_groups"] %}<div class="dependency-line">{{ g["category"] }} → {{ g["items"]|join(", ") }}</div>{% endfor %}</div>{% endfor %}
+{% for x in limited_items %}<details class="card limited ingredient-alert"><summary><b>🟡 {{ x["name"] }}</b> <span class="qty-number">{{ x["qty"] }}</span></summary><div class="qty-row"><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int - 1 }}"><button class="qty-btn">−</button></form><span class="qty-number">{{ x["qty"] }}</span><form method="POST" action="/update" style="display:inline"><input type="hidden" name="ingredient" value="{{ x["name"] }}"><input type="hidden" name="status" value="LIMITED"><input type="hidden" name="qty" value="{{ x["qty"]|int + 1 }}"><button class="qty-btn">+</button></form></div>{% if x["affected_groups"] %}<div class="affected-title">Affected menu:</div>{% for g in x["affected_groups"] %}<div class="dependency-group"><b>{{ g["category"] }}</b>{% for mi in g["items"] %}<div>→ {{ mi }} <span class="yellow">🟡 LIMITED</span></div>{% endfor %}</div>{% endfor %}{% else %}<div class="small">No mapped menu dependency yet.</div>{% endif %}</details>{% endfor %}
 {% for a in menu_limited_alerts %}<div class="card limited"><b>🟡 {{ a["category"] }}</b>{% for mi in a["items"] %}<div style="margin-top:8px"><b>→ {{ mi["item"] }}</b><div class="qty-row"><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="MINUS"><button class="qty-btn">−</button></form><span class="qty-number">{{ mi["qty"] }}</span><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="PLUS"><button class="qty-btn">+</button></form><form method="POST" action="/update-menu-item" style="display:inline"><input type="hidden" name="category" value="{{ a["category"] }}"><input type="hidden" name="item" value="{{ mi["item"] }}"><input type="hidden" name="action" value="AVAILABLE"><button class="back-btn">🟢 AVAILABLE</button></form></div></div>{% endfor %}</div>{% endfor %}
 {% else %}<p>✅ No main ingredient or menu item is LIMITED.</p>{% endif %}
 </div>
