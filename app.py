@@ -89,6 +89,16 @@ def init_db():
     conn.close()
 
 app = Flask(__name__)
+
+# PWA files are served from the site root so Chrome can use the
+# service worker for the whole app (not only /static/).
+@app.route("/manifest.json")
+def pwa_manifest():
+    return app.send_static_file("manifest.json")
+
+@app.route("/sw.js")
+def pwa_service_worker():
+    return app.send_static_file("sw.js")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
 
 # =========================
@@ -700,7 +710,7 @@ def login():
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
 </script>
@@ -810,7 +820,7 @@ def history():
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
 </script>
@@ -1197,7 +1207,7 @@ HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="manifest" href="/static/manifest.json">
+<link rel="manifest" href="/manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MOUZY BANANA AVIL MILK</title>
 <style>
@@ -1287,7 +1297,7 @@ refreshKitchen();setInterval(()=>{ if(!kitchenBusy) refreshKitchen(); },1000);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
 </script>
@@ -1395,7 +1405,7 @@ KITCHEN_LIVE_HTML = """
 STAFF_HTML = """
 <!DOCTYPE html>
 <html><head>
-<link rel="manifest" href="/static/manifest.json">
+<link rel="manifest" href="/manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mouzy Edappally Staff View</title>
 <style>
@@ -1427,7 +1437,7 @@ refreshStaff();setInterval(refreshStaff,1000);
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
 </script>
