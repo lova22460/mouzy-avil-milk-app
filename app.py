@@ -157,7 +157,7 @@ def send_push_notification(title, body, tag="mouzy"):
             endpoint=row["endpoint"] if isinstance(row,dict) else row[0]
             subscription=row["subscription"] if isinstance(row,dict) else row[1]
             try:
-                webpush(subscription_info=json.loads(subscription), data=json.dumps({"title":title,"body":body,"tag":tag}), vapid_private_key=private_key, vapid_claims={"sub":"mailto:mouzy-notifications@localhost"})
+                webpush(subscription_info=json.loads(subscription), data=json.dumps({"title":title,"body":body,"tag":tag}), vapid_private_key=private_key, vapid_claims={"sub":"mailto:mouzy-notifications@mouzy-avil-milk-app.onrender.com"})
             except Exception as exc:
                 status=getattr(getattr(exc,"response",None),"status_code",None)
                 if status in (404,410): dead.append(endpoint)
@@ -189,6 +189,13 @@ def push_subscribe():
         conn.commit()
     finally:
         cur.close(); conn.close()
+    return jsonify({"ok":True})
+
+@app.route("/push/test", methods=["POST"])
+def push_test():
+    if not session.get("kitchen"):
+        return jsonify({"ok":False}), 401
+    send_push_notification("🔔 MOUZY Test Notification", "Mobile notifications are working.", "mouzy-test")
     return jsonify({"ok":True})
 
 # =========================
@@ -584,26 +591,31 @@ def effective_item_status(category, item, dependencies, category_enabled=None, i
         category_enabled = category_controls.get(category, True)
         item_control = item_controls.get((category, item), {"enabled": True, "manual_status": "AUTO", "qty": 1})
 
-    if not category_enabled:
-        return "CLOSED"
-
     if isinstance(item_control, bool):
         item_control = {"enabled": item_control, "manual_status": "AUTO", "qty": 1}
 
-    if not item_control.get("enabled", True):
-        return "CLOSED"
+    # Category OFF is a manual category-level override.
+    if not category_enabled:
+        return "OFF"
 
+    # Manual item OFF is different from an ingredient-caused OUT OF STOCK.
+    if not item_control.get("enabled", True) or item_control.get("manual_status") == "OFF":
+        return "OFF"
+
+    # A manual LIMITED item keeps its quantity, but dependencies can still
+    # force it OUT if a required ingredient is unavailable.
     if item_control.get("manual_status") == "LIMITED":
         if int(item_control.get("qty", 1) or 0) <= 0:
-            return "CLOSED"
+            return "OUT OF STOCK"
         for ingredient in dependencies:
             if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
-                return "CLOSED"
+                return "OUT OF STOCK"
         return "LIMITED"
 
+    # AUTO follows ingredient dependencies.
     for ingredient in dependencies:
         if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "OUT":
-            return "CLOSED"
+            return "OUT OF STOCK"
 
     for ingredient in dependencies:
         if stock.get(ingredient, {"status": "AVAILABLE"})["status"] == "LIMITED":
@@ -1480,7 +1492,7 @@ KITCHEN_LIVE_HTML = """
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
 <div class="menu-item">
-<div class="menu-item-name" onclick="this.closest('details').open=false" title="Tap item name to collapse category"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span>{% if item["status"] == "LIMITED" %} <span class="qty-number">{{ item["qty"] }}</span>{% endif %}</div>
+<div class="menu-item-name" onclick="this.closest('details').open=false" title="Tap item name to collapse category"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '⛔ OFF' if item["status"] == 'OFF' else '🔴 OUT OF STOCK' }}</span>{% if item["status"] == "LIMITED" %} <span class="qty-number">{{ item["qty"] }}</span>{% endif %}</div>
 <div class="item-controls">
 {% if item["status"] == "LIMITED" %}
 <form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="MINUS"><button type="submit" class="qty-btn">−</button></form>
@@ -1492,8 +1504,8 @@ KITCHEN_LIVE_HTML = """
 <form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" class="item-on-btn">🟢 ON</button></form>
 <form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="LIMITED"><button type="submit" class="item-limited-btn">🟡 LIMITED</button></form>
 <form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="OFF"><button type="submit" class="item-off-btn">🔴 OFF</button></form>
-{% if item["status"] == "OUT OF STOCK" or item["status"] == "CLOSED" %}
-<form method="POST" action="/toggle-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="ON"><button type="submit" class="back-btn">🟢 AVAILABLE</button></form>
+{% if item["status"] != "AVAILABLE" %}
+<form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="AVAILABLE"><button type="submit" class="back-btn">🟢 AVAILABLE</button></form>
 {% endif %}
 {% endif %}
 </div></div>
@@ -1537,6 +1549,7 @@ refreshStaff();setInterval(refreshStaff,1000);
 </script>
 <div style="text-align:center;margin:12px 0">
 <button id="notify-btn" type="button" style="background:#111;color:white;border:none;border-radius:9px;padding:10px 16px;font-weight:bold">🔔 ENABLE MOBILE NOTIFICATIONS</button>
+<button id="notify-test-btn" type="button" style="background:#28a745;color:white;border:none;border-radius:9px;padding:10px 16px;font-weight:bold;margin-left:6px">📲 TEST</button>
 <div id="notify-status" style="font-size:13px;color:#777;margin-top:6px"></div>
 </div>
 <script>
@@ -1557,6 +1570,13 @@ async function enableMouzyPush(){
  }catch(e){console.error(e);st.textContent='Could not enable notifications. Try again.';}
 }
 document.getElementById('notify-btn').addEventListener('click',enableMouzyPush);
+document.getElementById('notify-test-btn').addEventListener('click',async()=>{
+  const st=document.getElementById('notify-status');
+  try{
+    const r=await fetch('/push/test',{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'});
+    st.textContent=r.ok?'📲 Test notification sent.':'Could not send test notification.';
+  }catch(e){st.textContent='Could not send test notification.';}
+});
 </script>
 <script>
 if ('serviceWorker' in navigator) {
@@ -1592,7 +1612,7 @@ STAFF_LIVE_HTML = """
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
 {% for category,data in menu_status.items() %}<details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
-{% for item in data["items"] %}<div class="menu-item"><span><b>{{ item["name"] }}</b></span><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
+{% for item in data["items"] %}<div class="menu-item"><span><b>{{ item["name"] }}</b></span><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '⛔ OFF' if item["status"] == 'OFF' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
 </div></details>{% endfor %}</div>
 """
 
