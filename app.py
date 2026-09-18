@@ -760,14 +760,19 @@ def affected_menu(ingredient, category_controls=None, item_controls=None):
     return result
 
 
-def group_affected_menu(affected, wanted_status):
-    """Group affected menu items by category for compact display."""
+def group_affected_menu(affected, wanted_status=None):
+    """Group every mapped menu item by category.
+
+    Dependency information must remain visible even when a menu item is also
+    manually OFF or LIMITED.  The ingredient itself is the reason this list
+    is being displayed, so filtering by the item's effective status can hide
+    valid mappings (for example, an OUT ingredient previously showed
+    "No mapped menu dependency yet").
+    """
     grouped = []
     category_map = {}
 
     for item in affected:
-        if item["status"] != wanted_status:
-            continue
         category = item["category"]
         if category not in category_map:
             category_map[category] = []
@@ -1528,40 +1533,10 @@ kitchenRoot.addEventListener('focusout',e=>{
     if(!kitchenRoot.querySelector('input:focus,select:focus,textarea:focus')) kitchenEditing=false;
   },150);
 });
-kitchenRoot.addEventListener('submit', async e => {
-  const form = e.target.closest('form');
-  if (!form) return;
+// Menu controls intentionally use normal POST form submission.
+// Do not intercept ON/OFF/LIMITED/AVAILABLE buttons: this keeps the
+// server-side routes and database state handling identical to the working app.
 
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (kitchenBusy) return;
-  kitchenBusy = true;
-
-  const submitter = e.submitter || form.querySelector('button');
-  if (submitter) submitter.disabled = true;
-
-  try {
-    const response = await fetch(form.action, {
-      method: 'POST',
-      body: new FormData(form),
-      credentials: 'same-origin',
-      cache: 'no-store',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-
-    if (!response.ok) {
-      throw new Error('POST failed: ' + response.status);
-    }
-
-    await refreshKitchen();
-  } catch (err) {
-    console.error('MOUZY control update failed:', err);
-  } finally {
-    kitchenBusy = false;
-    if (submitter) submitter.disabled = false;
-  }
-});
 
 refreshKitchen();
 setInterval(() => {
