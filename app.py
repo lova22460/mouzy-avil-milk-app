@@ -1002,7 +1002,7 @@ def staff_live():
     for ingredient in MAIN_INGREDIENTS:
         data=stock[ingredient]
         if data["status"]=="OUT":
-            out_items.append({"name":ingredient,"affected":affected_menu(ingredient,category_controls,item_controls),"affected_groups":group_affected_menu(affected_menu(ingredient,category_controls,item_controls),"CLOSED")})
+            out_items.append({"name":ingredient,"affected":affected_menu(ingredient,category_controls,item_controls),"affected_groups":group_affected_menu(affected_menu(ingredient,category_controls,item_controls),"OUT OF STOCK")})
         elif data["status"]=="LIMITED":
             try: live_qty=int(data.get("qty") or 1)
             except (TypeError,ValueError): live_qty=1
@@ -1028,7 +1028,7 @@ def staff():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
+            out_items.append({"name": ingredient, "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "OUT OF STOCK")})
         elif data["status"] == "LIMITED":
             try: staff_qty=int(data.get("qty") or 1)
             except (TypeError,ValueError): staff_qty=1
@@ -1362,7 +1362,7 @@ def live():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "OUT OF STOCK")})
         elif data["status"] == "LIMITED":
             limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
@@ -1407,7 +1407,7 @@ def home():
     for ingredient in MAIN_INGREDIENTS:
         data = stock[ingredient]
         if data["status"] == "OUT":
-            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "CLOSED")})
+            out_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "OUT OF STOCK")})
         elif data["status"] == "LIMITED":
             limited_items.append({"name": ingredient, "qty": data["qty"], "affected": affected_menu(ingredient, category_controls, item_controls), "affected_groups": group_affected_menu(affected_menu(ingredient, category_controls, item_controls), "LIMITED")})
         else:
@@ -1536,40 +1536,34 @@ kitchenRoot.addEventListener('submit', async e => {
   e.stopPropagation();
 
   if (kitchenBusy) return;
-
   kitchenBusy = true;
 
-  const buttons = form.querySelectorAll('button');
-  buttons.forEach(btn => btn.disabled = true);
+  const submitter = e.submitter || form.querySelector('button');
+  if (submitter) submitter.disabled = true;
 
   try {
     const response = await fetch(form.action, {
       method: 'POST',
       body: new FormData(form),
-      cache: 'no-store',
       credentials: 'same-origin',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+      cache: 'no-store',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
 
     if (!response.ok) {
       throw new Error('POST failed: ' + response.status);
     }
 
-    // Immediately update the page after the button action.
     await refreshKitchen();
-
   } catch (err) {
-    console.error('MOUZY update failed:', err);
+    console.error('MOUZY control update failed:', err);
   } finally {
     kitchenBusy = false;
-    buttons.forEach(btn => btn.disabled = false);
+    if (submitter) submitter.disabled = false;
   }
 });
 
 refreshKitchen();
-
 setInterval(() => {
   if (!kitchenBusy) refreshKitchen();
 }, 1000);
