@@ -1,9 +1,17 @@
-from flask import Flask, render_template_string, request, redirect, session
+from flask import Flask, render_template_string, request, redirect, session, jsonify
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import sqlite3 #import
 import os
 import psycopg2
+import json
+import base64
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+try:
+    from pywebpush import webpush
+except Exception:
+    webpush = None
 from psycopg2.extras import RealDictCursor
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -85,6 +93,21 @@ def init_db():
                 data.get("qty", "")
             ))
 
+    # Persistent storage for PWA push subscriptions and the VAPID key pair.
+    conn.cursor().execute("""
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            endpoint TEXT PRIMARY KEY,
+            subscription TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.cursor().execute("""
+        CREATE TABLE IF NOT EXISTS vapid_config (
+            id INTEGER PRIMARY KEY,
+            private_key TEXT NOT NULL,
+            public_key TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -100,6 +123,73 @@ def pwa_manifest():
 def pwa_service_worker():
     return app.send_static_file("sw.js")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret")
+
+def _b64url(data):
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+def get_vapid_keys():
+    conn=get_db(); cur=conn.cursor()
+    try:
+        cur.execute("SELECT private_key, public_key FROM vapid_config WHERE id = " + ("%s" if DATABASE_URL else "?"), (1,))
+        row=cur.fetchone()
+        if row:
+            return (row["private_key"], row["public_key"]) if isinstance(row, dict) else (row[0], row[1])
+        key=ec.generate_private_key(ec.SECP256R1())
+        private_key=_b64url(key.private_numbers().private_value.to_bytes(32,"big"))
+        public_key=_b64url(key.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint))
+        if DATABASE_URL:
+            cur.execute("INSERT INTO vapid_config (id, private_key, public_key) VALUES (%s,%s,%s)",(1,private_key,public_key))
+        else:
+            cur.execute("INSERT INTO vapid_config (id, private_key, public_key) VALUES (?,?,?)",(1,private_key,public_key))
+        conn.commit()
+        return private_key,public_key
+    finally:
+        cur.close(); conn.close()
+
+def send_push_notification(title, body, tag="mouzy"):
+    if webpush is None: return
+    private_key,_=get_vapid_keys()
+    conn=get_db(); cur=conn.cursor()
+    try:
+        cur.execute("SELECT endpoint, subscription FROM push_subscriptions")
+        rows=cur.fetchall(); dead=[]
+        for row in rows:
+            endpoint=row["endpoint"] if isinstance(row,dict) else row[0]
+            subscription=row["subscription"] if isinstance(row,dict) else row[1]
+            try:
+                webpush(subscription_info=json.loads(subscription), data=json.dumps({"title":title,"body":body,"tag":tag}), vapid_private_key=private_key, vapid_claims={"sub":"mailto:mouzy-notifications@localhost"})
+            except Exception as exc:
+                status=getattr(getattr(exc,"response",None),"status_code",None)
+                if status in (404,410): dead.append(endpoint)
+        for endpoint in dead:
+            cur.execute("DELETE FROM push_subscriptions WHERE endpoint = " + ("%s" if DATABASE_URL else "?"), (endpoint,))
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+
+@app.route("/push/public-key")
+def push_public_key():
+    _,public_key=get_vapid_keys()
+    return jsonify({"publicKey":public_key})
+
+@app.route("/push/subscribe", methods=["POST"])
+def push_subscribe():
+    sub=request.get_json(silent=True) or {}
+    endpoint=sub.get("endpoint")
+    if not endpoint or not isinstance(sub.get("keys"),dict):
+        return jsonify({"ok":False}),400
+    conn=get_db(); cur=conn.cursor()
+    try:
+        now=datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%d-%m-%Y %I:%M:%S %p")
+        payload=json.dumps(sub,separators=(",",":"))
+        if DATABASE_URL:
+            cur.execute("INSERT INTO push_subscriptions(endpoint,subscription,created_at) VALUES(%s,%s,%s) ON CONFLICT(endpoint) DO UPDATE SET subscription=EXCLUDED.subscription, created_at=EXCLUDED.created_at",(endpoint,payload,now))
+        else:
+            cur.execute("INSERT INTO push_subscriptions(endpoint,subscription,created_at) VALUES(?,?,?) ON CONFLICT(endpoint) DO UPDATE SET subscription=excluded.subscription, created_at=excluded.created_at",(endpoint,payload,now))
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+    return jsonify({"ok":True})
 
 # =========================
 # STOCK
@@ -983,6 +1073,7 @@ def toggle_item():
     else:
         cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, qty, category, item))
     conn.commit(); cur.close(); conn.close()
+    send_push_notification("📋 MOUZY Menu Update", f"{item} → {action}.", "mouzy-menu")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return "OK", 200
     return redirect("/")
@@ -1027,6 +1118,7 @@ def update_menu_item():
     else:
         cur.execute("UPDATE item_controls SET enabled = ?, manual_status = ?, qty = ? WHERE category = ? AND item = ?", (1 if enabled else 0, manual_status, new_qty, category, item))
     conn.commit(); cur.close(); conn.close()
+    send_push_notification("📋 MOUZY Menu Update", f"{item} → {action}.", "mouzy-menu")
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return "OK", 200
     return redirect("/")
@@ -1094,6 +1186,12 @@ def update():
 
     # Reload latest stock from database
     load_stock_from_db()
+    if status == "OUT":
+        send_push_notification("🔴 MOUZY Stock Alert", f"{ingredient} is OUT OF STOCK.", "mouzy-stock-out")
+    elif status == "LIMITED":
+        send_push_notification("🟡 MOUZY Stock Alert", f"{ingredient} is LIMITED ({qty}).", "mouzy-stock-limited")
+    elif status == "AVAILABLE":
+        send_push_notification("🟢 MOUZY Stock Alert", f"{ingredient} is AVAILABLE again.", "mouzy-stock-available")
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return "OK", 200
@@ -1436,6 +1534,29 @@ async function refreshStaff(){
  }catch(e){}
 }
 refreshStaff();setInterval(refreshStaff,1000);
+</script>
+<div style="text-align:center;margin:12px 0">
+<button id="notify-btn" type="button" style="background:#111;color:white;border:none;border-radius:9px;padding:10px 16px;font-weight:bold">🔔 ENABLE MOBILE NOTIFICATIONS</button>
+<div id="notify-status" style="font-size:13px;color:#777;margin-top:6px"></div>
+</div>
+<script>
+function b64ToBytes(s){const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));const a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
+async function enableMouzyPush(){
+ const st=document.getElementById('notify-status');
+ if(!('serviceWorker' in navigator)&&!('PushManager' in window)){st.textContent='Push notifications are not supported here.';return;}
+ try{
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted'){st.textContent='Notification permission was not granted.';return;}
+  const reg=await navigator.serviceWorker.ready;
+  const key=(await (await fetch('/push/public-key',{cache:'no-store'})).json()).publicKey;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToBytes(key)});
+  const r=await fetch('/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
+  if(!r.ok) throw new Error('subscribe failed');
+  st.textContent='✅ Notifications enabled on this phone.';document.getElementById('notify-btn').textContent='🔔 NOTIFICATIONS ON';
+ }catch(e){console.error(e);st.textContent='Could not enable notifications. Try again.';}
+}
+document.getElementById('notify-btn').addEventListener('click',enableMouzyPush);
 </script>
 <script>
 if ('serviceWorker' in navigator) {
