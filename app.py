@@ -1528,29 +1528,51 @@ kitchenRoot.addEventListener('focusout',e=>{
     if(!kitchenRoot.querySelector('input:focus,select:focus,textarea:focus')) kitchenEditing=false;
   },150);
 });
-kitchenRoot.addEventListener('submit',async e=>{
-  const form=e.target.closest('form'); if(!form)return;
+kitchenRoot.addEventListener('submit', async e => {
+  const form = e.target.closest('form');
+  if (!form) return;
+
   e.preventDefault();
-  if(kitchenBusy)return;
-  kitchenBusy=true;
-  const button=form.querySelector('button'); if(button)button.disabled=true;
-  try{
-    const response=await fetch(form.action,{
-      method:'POST',
-      body:new FormData(form),
-      cache:'no-store',
-      credentials:'same-origin',
-      headers:{'X-Requested-With':'XMLHttpRequest'}
+  e.stopPropagation();
+
+  if (kitchenBusy) return;
+
+  kitchenBusy = true;
+
+  const buttons = form.querySelectorAll('button');
+  buttons.forEach(btn => btn.disabled = true);
+
+  try {
+    const response = await fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     });
-    if(!response.ok) throw new Error('POST failed: '+response.status);
+
+    if (!response.ok) {
+      throw new Error('POST failed: ' + response.status);
+    }
+
+    // Immediately update the page after the button action.
     await refreshKitchen();
-  }catch(err){
-    console.error('Mouzy control update failed:',err);
-  }finally{
-    kitchenBusy=false;
+
+  } catch (err) {
+    console.error('MOUZY update failed:', err);
+  } finally {
+    kitchenBusy = false;
+    buttons.forEach(btn => btn.disabled = false);
   }
 });
-refreshKitchen();setInterval(()=>{ if(!kitchenBusy) refreshKitchen(); },1000);
+
+refreshKitchen();
+
+setInterval(() => {
+  if (!kitchenBusy) refreshKitchen();
+}, 1000);
 </script>
 
 <script>
@@ -1638,7 +1660,7 @@ KITCHEN_LIVE_HTML = """
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
 <div class="menu-item">
-<div class="menu-item-name" onclick="this.closest('details').open=false" title="Tap item name to collapse category"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '⛔ OFF' if item["status"] == 'OFF' else '🔴 OUT OF STOCK' }}</span>{% if item["status"] == "LIMITED" %} <span class="qty-number">{{ item["qty"] }}</span>{% endif %}</div>
+<div class="menu-item-name"><b>{{ item["name"] }}</b><br><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '⛔ OFF' if item["status"] == 'OFF' else '🔴 OUT OF STOCK' }}</span>{% if item["status"] == "LIMITED" %} <span class="qty-number">{{ item["qty"] }}</span>{% endif %}</div>
 <div class="item-controls">
 {% if item["status"] == "LIMITED" %}
 <form method="POST" action="/update-menu-item" class="menu-control-form" style="display:inline"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="item" value="{{ item["name"] }}"><input type="hidden" name="action" value="MINUS"><button type="submit" class="qty-btn">−</button></form>
