@@ -696,7 +696,15 @@ def login():
         👀 Staff View OHH HELLO IDHAR DEKHO IDHAR
     </a>
 
-    </body>
+    
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
 
     </html>
     """
@@ -798,7 +806,15 @@ def history():
 
         {% endfor %}
 
-    </body>
+    
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
     </html>
     """, history=rows)
 
@@ -1267,6 +1283,14 @@ kitchenRoot.addEventListener('submit',async e=>{
 });
 refreshKitchen();setInterval(()=>{ if(!kitchenBusy) refreshKitchen(); },1000);
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
 """
@@ -1399,7 +1423,15 @@ async function refreshStaff(){
  }catch(e){}
 }
 refreshStaff();setInterval(refreshStaff,1000);
-</script></body></html>
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/static/sw.js').catch(function () {});
+  });
+}
+</script>
+</body></html>
 """
 
 STAFF_LIVE_HTML = """
