@@ -108,6 +108,24 @@ def init_db():
             public_key TEXT NOT NULL
         )
     """)
+    conn.cursor().execute("""
+        CREATE TABLE IF NOT EXISTS custom_menu_items (
+            category TEXT NOT NULL,
+            item TEXT NOT NULL,
+            dependencies TEXT NOT NULL DEFAULT '[]',
+            ingredient_specs TEXT NOT NULL DEFAULT '{}',
+            prep_method TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (category, item)
+        )
+    """)
+    # Ensure persistent category/item control tables exist on a fresh database too.
+    if DATABASE_URL:
+        conn.cursor().execute("""CREATE TABLE IF NOT EXISTS category_controls (category TEXT PRIMARY KEY, enabled BOOLEAN NOT NULL DEFAULT TRUE)""")
+        conn.cursor().execute("""CREATE TABLE IF NOT EXISTS item_controls (category TEXT NOT NULL, item TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT TRUE, manual_status TEXT NOT NULL DEFAULT 'AUTO', qty INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(category,item))""")
+    else:
+        conn.cursor().execute("""CREATE TABLE IF NOT EXISTS category_controls (category TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1)""")
+        conn.cursor().execute("""CREATE TABLE IF NOT EXISTS item_controls (category TEXT NOT NULL, item TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, manual_status TEXT NOT NULL DEFAULT 'AUTO', qty INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(category,item))""")
     conn.commit()
     conn.close()
 
@@ -193,8 +211,6 @@ def push_subscribe():
 
 @app.route("/push/test", methods=["POST"])
 def push_test():
-    if not session.get("kitchen"):
-        return jsonify({"ok":False}), 401
     send_push_notification("🔔 MOUZY Test Notification", "Mobile notifications are working.", "mouzy-test")
     return jsonify({"ok":True})
 
@@ -535,6 +551,44 @@ def load_menu_controls():
 
 
 
+def load_custom_menu_items():
+    """Load user-created menu items from the database into the live menu map."""
+    conn = get_db(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT category, item, dependencies FROM custom_menu_items")
+        rows = cur.fetchall()
+    except Exception:
+        rows = []
+    finally:
+        cur.close(); conn.close()
+
+    for row in rows:
+        category = row["category"] if isinstance(row, dict) else row[0]
+        item = row["item"] if isinstance(row, dict) else row[1]
+        raw = row["dependencies"] if isinstance(row, dict) else row[2]
+        try:
+            deps = json.loads(raw or "[]")
+        except Exception:
+            deps = []
+        menu.setdefault(category, {})[item] = deps
+        for dep in deps:
+            if dep and dep not in MAIN_INGREDIENTS:
+                MAIN_INGREDIENTS.append(dep)
+
+
+def ensure_dynamic_ingredients():
+    conn = get_db(); cur = conn.cursor()
+    try:
+        for ingredient in MAIN_INGREDIENTS:
+            if DATABASE_URL:
+                cur.execute("INSERT INTO stock(ingredient,status,qty) VALUES(%s,%s,%s) ON CONFLICT(ingredient) DO NOTHING", (ingredient,"AVAILABLE",""))
+            else:
+                cur.execute("INSERT OR IGNORE INTO stock(ingredient,status,qty) VALUES(?,?,?)", (ingredient,"AVAILABLE",""))
+        conn.commit()
+    finally:
+        cur.close(); conn.close()
+
+
 def load_stock_from_db():
     """Load the latest ingredient statuses/quantities from the database."""
     global stock
@@ -580,8 +634,10 @@ for _dep in MAIN_INGREDIENTS:
         stock[_dep] = {"status": "AVAILABLE", "qty": ""}
 
 init_db()
+load_custom_menu_items()
+ensure_dynamic_ingredients()
 load_stock_from_db()
-
+init_menu_controls()
 
 
 def effective_item_status(category, item, dependencies, category_enabled=None, item_control=None):
@@ -1030,6 +1086,86 @@ def staff():
 
 
 # =========================
+# ADD NEW MENU ITEM
+# =========================
+
+@app.route("/add-item", methods=["GET", "POST"])
+def add_item():
+    if not session.get("kitchen"):
+        return redirect("/login")
+    message = ""
+    error = ""
+    if request.method == "POST":
+        category = request.form.get("category", "").strip()
+        if category == "__NEW__":
+            category = request.form.get("new_category", "").strip()
+        item = request.form.get("item", "").strip()
+        raw_lines = request.form.get("ingredients", "").splitlines()
+        prep = request.form.get("prep_method", "").strip()
+        initial = request.form.get("initial_status", "AVAILABLE").upper()
+        deps=[]; specs={}
+        for line in raw_lines:
+            line=line.strip()
+            if not line: continue
+            parts=[x.strip() for x in line.split("|",1)]
+            dep=parts[0]
+            if dep in MAIN_INGREDIENTS and dep not in deps:
+                deps.append(dep)
+                if len(parts)==2 and parts[1]: specs[dep]=parts[1]
+        if not category or not item:
+            error="Category and item name are required."
+        elif not deps:
+            error="Add at least one existing ingredient (one per line)."
+        elif initial not in {"AVAILABLE","LIMITED","OFF"}:
+            initial="AVAILABLE"
+        else:
+            conn=get_db(); cur=conn.cursor()
+            try:
+                now=datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%d-%m-%Y %I:%M:%S %p")
+                payload=json.dumps(deps,separators=(",",":")); spec_payload=json.dumps(specs,separators=(",",":"))
+                if DATABASE_URL:
+                    cur.execute("INSERT INTO custom_menu_items(category,item,dependencies,ingredient_specs,prep_method,created_at) VALUES(%s,%s,%s,%s,%s,%s)", (category,item,payload,spec_payload,prep,now))
+                else:
+                    cur.execute("INSERT INTO custom_menu_items(category,item,dependencies,ingredient_specs,prep_method,created_at) VALUES(?,?,?,?,?,?)", (category,item,payload,spec_payload,prep,now))
+                conn.commit()
+            except Exception as exc:
+                conn.rollback()
+                error="Could not save item. The category/item may already exist."
+            finally:
+                cur.close(); conn.close()
+            if not error:
+                menu.setdefault(category,{})[item]=deps
+                for dep in deps:
+                    if dep not in MAIN_INGREDIENTS: MAIN_INGREDIENTS.append(dep)
+                ensure_dynamic_ingredients()
+                # Seed the new category/item controls.
+                conn=get_db(); cur=conn.cursor()
+                try:
+                    if DATABASE_URL:
+                        cur.execute("INSERT INTO category_controls(category,enabled) VALUES(%s,TRUE) ON CONFLICT(category) DO NOTHING",(category,))
+                        enabled = initial != "OFF"; manual = "LIMITED" if initial=="LIMITED" else ("OFF" if initial=="OFF" else "AUTO")
+                        cur.execute("INSERT INTO item_controls(category,item,enabled,manual_status,qty) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(category,item) DO NOTHING",(category,item,enabled,manual,1))
+                    else:
+                        cur.execute("INSERT OR IGNORE INTO category_controls(category,enabled) VALUES(?,1)",(category,))
+                        enabled = 0 if initial=="OFF" else 1; manual = "LIMITED" if initial=="LIMITED" else ("OFF" if initial=="OFF" else "AUTO")
+                        cur.execute("INSERT OR IGNORE INTO item_controls(category,item,enabled,manual_status,qty) VALUES(?,?,?,?,1)",(category,item,enabled,manual))
+                    conn.commit()
+                finally:
+                    cur.close(); conn.close()
+                message=f"✅ {item} added to {category}."
+    return render_template_string(ADD_ITEM_HTML, categories=list(menu.keys()), ingredients=sorted(MAIN_INGREDIENTS), message=message, error=error)
+
+
+# =========================
+# NOTIFICATIONS
+# =========================
+
+@app.route("/notifications")
+def notifications():
+    return render_template_string(NOTIFICATIONS_HTML)
+
+
+# =========================
 # PHASE 2 — CATEGORY / ITEM ON-OFF
 # =========================
 
@@ -1316,6 +1452,15 @@ def home():
 # KITCHEN HEAD HTML
 # ==================================================
 
+ADD_ITEM_HTML = """
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="/manifest.json"><title>MOUZY — Add New Item</title>
+<style>body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:18px}.wrap{max-width:680px;margin:25px auto}.card{background:white;padding:20px;border-radius:16px;box-shadow:0 3px 12px rgba(0,0,0,.08)}label{font-weight:bold;display:block;margin-top:10px}input,select,textarea{width:100%;box-sizing:border-box;padding:11px;margin:6px 0 12px;border:1px solid #ccc;border-radius:9px}.btn{background:#28a745;color:white;border:0;border-radius:9px;padding:12px 18px;font-weight:bold}.back{display:inline-block;margin-bottom:14px;text-decoration:none;color:#111;font-weight:bold}.hint{font-size:13px;color:#777}.ok{background:#eaf7ee;padding:10px;border-radius:9px}.err{background:#ffe9e9;color:#a00;padding:10px;border-radius:9px}</style></head><body><div class="wrap"><a class="back" href="/">← Back to Kitchen</a><div class="card"><h2>➕ ADD NEW MENU ITEM</h2>{% if message %}<div class="ok">{{ message }}</div>{% endif %}{% if error %}<div class="err">{{ error }}</div>{% endif %}<form method="POST"><label>Category</label><select name="category" id="cat" onchange="document.getElementById('newcat').style.display=this.value==='__NEW__'?'block':'none'"><option value="">Select category</option>{% for c in categories %}<option>{{ c }}</option>{% endfor %}<option value="__NEW__">➕ New Category</option></select><input id="newcat" name="new_category" placeholder="New category name" style="display:none"><label>Item Name</label><input name="item" required placeholder="Example: Special Shake"><label>Ingredients</label><textarea name="ingredients" rows="7" required placeholder="Mango | 50 gm\nVanilla | 1 scoop\nCherry | 1 pcs"></textarea><div class="hint">Use one ingredient per line. The ingredient name must already exist in Ingredient Master. The part after | is optional quantity/unit information.</div><label>Preparation Method</label><textarea name="prep_method" rows="4" placeholder="Preparation steps..."></textarea><label>Initial Status</label><select name="initial_status"><option>AVAILABLE</option><option>LIMITED</option><option>OFF</option></select><br><br><button class="btn" type="submit">💾 SAVE NEW ITEM</button></form></div></div></body></html>
+"""
+
+NOTIFICATIONS_HTML = """
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="/manifest.json"><title>MOUZY — Notifications</title><style>body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:18px}.wrap{max-width:650px;margin:25px auto}.card{background:white;padding:20px;border-radius:16px;box-shadow:0 3px 12px rgba(0,0,0,.08);margin-bottom:15px}button,a{display:inline-block;padding:12px 16px;border:0;border-radius:10px;text-decoration:none;font-weight:bold;cursor:pointer;margin:4px}.enable{background:#111;color:white}.test{background:#28a745;color:white}.back{color:#111}.status{padding:12px;background:#f1f1f1;border-radius:10px;margin-top:10px}</style></head><body><div class="wrap"><a class="back" href="/">← Back</a><div class="card"><h2>🔔 MOUZY Notifications</h2><p>Enable notifications on this phone. Keep this page/app installed and allow notification permission when Chrome asks.</p><button class="enable" id="enable">🔔 ENABLE NOTIFICATIONS</button><button class="test" id="test">📲 SEND TEST</button><div class="status" id="status">Checking notification status…</div></div><div class="card"><b>What you will receive</b><p>🔴 Stock OUT<br>🟡 Stock LIMITED<br>🟢 Stock AVAILABLE<br>📋 Menu changes</p></div></div><script>function b64ToBytes(s){const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));const a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}async function update(){const st=document.getElementById('status');if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window)){st.textContent='❌ Push notifications are not supported here.';return;}const sub=await (await navigator.serviceWorker.ready).pushManager.getSubscription();st.textContent=sub?'✅ Notifications are enabled on this phone.':'🔔 Notifications are not enabled yet.';}async function enable(){const st=document.getElementById('status');try{const p=await Notification.requestPermission();if(p!=='granted'){st.textContent='❌ Permission was not granted.';return;}const reg=await navigator.serviceWorker.ready;const key=(await (await fetch('/push/public-key',{cache:'no-store'})).json()).publicKey;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToBytes(key)});const r=await fetch('/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});if(!r.ok)throw Error('subscribe failed');st.textContent='✅ Notifications enabled and registered.';}catch(e){console.error(e);st.textContent='❌ Could not enable notifications. Check Chrome permission and try again.';}}document.getElementById('enable').onclick=enable;document.getElementById('test').onclick=async()=>{const st=document.getElementById('status');const r=await fetch('/push/test',{method:'POST'});st.textContent=r.ok?'📲 Test request sent.':'❌ Test failed.';};update();if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').then(update).catch(()=>{});</script></body></html>
+"""
+
 HTML = """
 <!DOCTYPE html>
 <html>
@@ -1326,7 +1471,7 @@ HTML = """
 <style>
 body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}
 h1{text-align:center}
-.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.dot-menu{position:fixed;top:12px;right:12px;z-index:9999}.dot-menu>button{background:#111;color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:25px;cursor:pointer}.dot-panel{display:none;position:absolute;right:0;top:50px;background:white;min-width:210px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:8px}.dot-panel a{display:block;padding:12px 14px;text-decoration:none;color:#111;border-radius:9px;font-weight:bold}.dot-panel a:hover{background:#f1f1f1}.dot-menu.open .dot-panel{display:block}.notify-page{max-width:700px;margin:50px auto}.form-card{background:white;padding:18px;border-radius:15px;box-shadow:0 3px 12px rgba(0,0,0,.08)}.form-card input,.form-card select,.form-card textarea{width:100%;box-sizing:border-box;margin:6px 0 12px;padding:11px;border:1px solid #ccc;border-radius:9px}.primary{background:#28a745;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.danger{background:#dc3545;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.notice{padding:10px;border-radius:9px;background:#eaf7ee;margin-bottom:12px}.error{padding:10px;border-radius:9px;background:#ffe9e9;color:#a00;margin-bottom:12px} .section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
 .card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}
 .available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}
 button{border:none;padding:8px 12px;border-radius:8px;margin:4px 2px;font-weight:bold;cursor:pointer}
@@ -1347,6 +1492,7 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 </style>
 </head>
 <body>
+<div class="dot-menu" id="dotMenu"><button type="button" onclick="document.getElementById('dotMenu').classList.toggle('open')">⋮</button><div class="dot-panel"><a href="/">🏠 Kitchen</a><a href="/staff">👀 Staff View</a><a href="/add-item">➕ Add New Item</a><a href="/notifications">🔔 Notifications</a><a href="/history">📋 History</a><a href="/logout">🔒 Logout</a></div></div>
 <h1>🥤 MOUZY BANANA AVIL MILK</h1>
 <div style="text-align:center;margin-bottom:15px">
 <a href="/history" style="display:inline-block;background:#343a40;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">📋 STOCK HISTORY</a>
@@ -1487,7 +1633,7 @@ KITCHEN_LIVE_HTML = """
 <p class="small">All categories are collapsed by default. Changes update live every 1 second.</p>
 {% for category,data in menu_status.items() %}
 <details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}">
-<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary>
+<summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OFF' }}</span></summary>
 <div class="category-items">
 <div class="control-row"><form method="POST" action="/toggle-category" class="menu-control-form"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="action" value="{{ 'OFF' if data["enabled"] else 'ON' }}"><button class="{{ 'category-off-btn' if data["enabled"] else 'category-on-btn' }}">{{ '🔴 TURN CATEGORY OFF' if data["enabled"] else '🟢 TURN CATEGORY ON' }}</button></form></div>
 {% for item in data["items"] %}
@@ -1522,8 +1668,9 @@ STAFF_HTML = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mouzy Edappally Staff View</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.ingredient-alert .qty-number{margin-left:18px;min-width:32px;display:inline-block;text-align:center}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item-name{cursor:pointer;flex:1}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
+body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}.dot-menu{position:fixed;top:12px;right:12px;z-index:9999}.dot-menu>button{background:#111;color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:25px;cursor:pointer}.dot-panel{display:none;position:absolute;right:0;top:50px;background:white;min-width:210px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:8px}.dot-panel a{display:block;padding:12px 14px;text-decoration:none;color:#111;border-radius:9px;font-weight:bold}.dot-menu.open .dot-panel{display:block}.section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}.red{color:red;font-weight:bold}.yellow{color:#e69500;font-weight:bold}.green{color:green;font-weight:bold}.small{color:#777;font-size:13px}.ingredient-alert .qty-number{margin-left:18px;min-width:32px;display:inline-block;text-align:center}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}.menu-category{background:#f8f8f8;margin:10px 0;border-radius:12px;overflow:hidden;border:1px solid #eee}.menu-category summary{cursor:pointer;padding:15px;font-weight:bold;font-size:17px;list-style:none}.menu-category summary::-webkit-details-marker{display:none}.menu-category summary::after{content:" ▼";float:right}.menu-category[open] summary::after{content:" ▲"}.category-items{padding:0 12px 8px}.menu-item-name{cursor:pointer;flex:1}.menu-item{display:flex;justify-content:space-between;padding:10px 3px;border-bottom:1px solid #eee}.category-state{float:right;font-size:13px}.cat-on{color:green}.cat-off{color:red}
 </style></head><body>
+<div class="dot-menu" id="dotMenu"><button type="button" onclick="document.getElementById('dotMenu').classList.toggle('open')">⋮</button><div class="dot-panel"><a href="/login">🔐 Kitchen Login</a><a href="/staff">👀 Staff View</a><a href="/notifications">🔔 Notifications</a></div></div>
 <h1 style="text-align:center">🥤 MOUZY EDAPPALLY STAFF VIEW</h1>
 <div style="text-align:center;margin-bottom:12px"><b>⚡ LIVE STAFF VIEW</b><br><span class="small">Updates every 1 second. Open menu categories stay open.</span></div>
 <div id="staff-live-root">Loading...</div>
@@ -1547,37 +1694,7 @@ async function refreshStaff(){
 }
 refreshStaff();setInterval(refreshStaff,1000);
 </script>
-<div style="text-align:center;margin:12px 0">
-<button id="notify-btn" type="button" style="background:#111;color:white;border:none;border-radius:9px;padding:10px 16px;font-weight:bold">🔔 ENABLE MOBILE NOTIFICATIONS</button>
-<button id="notify-test-btn" type="button" style="background:#28a745;color:white;border:none;border-radius:9px;padding:10px 16px;font-weight:bold;margin-left:6px">📲 TEST</button>
-<div id="notify-status" style="font-size:13px;color:#777;margin-top:6px"></div>
-</div>
-<script>
-function b64ToBytes(s){const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));const a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
-async function enableMouzyPush(){
- const st=document.getElementById('notify-status');
- if(!('serviceWorker' in navigator)&&!('PushManager' in window)){st.textContent='Push notifications are not supported here.';return;}
- try{
-  const permission=await Notification.requestPermission();
-  if(permission!=='granted'){st.textContent='Notification permission was not granted.';return;}
-  const reg=await navigator.serviceWorker.ready;
-  const key=(await (await fetch('/push/public-key',{cache:'no-store'})).json()).publicKey;
-  let sub=await reg.pushManager.getSubscription();
-  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToBytes(key)});
-  const r=await fetch('/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});
-  if(!r.ok) throw new Error('subscribe failed');
-  st.textContent='✅ Notifications enabled on this phone.';document.getElementById('notify-btn').textContent='🔔 NOTIFICATIONS ON';
- }catch(e){console.error(e);st.textContent='Could not enable notifications. Try again.';}
-}
-document.getElementById('notify-btn').addEventListener('click',enableMouzyPush);
-document.getElementById('notify-test-btn').addEventListener('click',async()=>{
-  const st=document.getElementById('notify-status');
-  try{
-    const r=await fetch('/push/test',{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'});
-    st.textContent=r.ok?'📲 Test notification sent.':'Could not send test notification.';
-  }catch(e){st.textContent='Could not send test notification.';}
-});
-</script>
+<div style="text-align:center;margin:12px 0"><a href="/notifications" style="display:inline-block;background:#111;color:white;border-radius:9px;padding:11px 16px;text-decoration:none;font-weight:bold">🔔 OPEN NOTIFICATION SETTINGS</a></div>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
@@ -1611,7 +1728,7 @@ STAFF_LIVE_HTML = """
 {% endfor %}{% else %}<p>✅ Nothing is LIMITED.</p>{% endif %}</div>
 
 <div class="section"><h2>🥤 MENU STRUCTURE</h2><p class="small">Tap a category to see its items. Live updates do not reload the page.</p>
-{% for category,data in menu_status.items() %}<details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OUT OF STOCK' }}</span></summary><div class="category-items">
+{% for category,data in menu_status.items() %}<details class="menu-category" data-key="menu-{{ category|e }}" data-category="{{ category }}"><summary><span>{{ category }}</span> <span class="category-state {{ 'cat-on' if data["enabled"] else 'cat-off' }}">{{ '🟢 ON' if data["enabled"] else '🔴 OFF' }}</span></summary><div class="category-items">
 {% for item in data["items"] %}<div class="menu-item"><span><b>{{ item["name"] }}</b></span><span class="{{ 'green' if item["status"] == 'AVAILABLE' else 'yellow' if item["status"] == 'LIMITED' else 'red' }}">{{ '🟢 AVAILABLE' if item["status"] == 'AVAILABLE' else '🟡 LIMITED' if item["status"] == 'LIMITED' else '⛔ OFF' if item["status"] == 'OFF' else '🔴 OUT OF STOCK' }}</span></div>{% endfor %}
 </div></details>{% endfor %}</div>
 """
