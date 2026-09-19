@@ -271,7 +271,7 @@ INGREDIENT_CATEGORIES = {
         "Coffee", "Oreo", "Kitkat", "Choco Pie", "Chocolate Wafer", "Brownie",
     ],
 
-    "CHEESEY CHIKEN": [
+    "CHEESEY CHICKEN": [
         "Bread", "Samoona", "Chicken", "Mayonnaisse", "White Mayonnaise",
         "Slices", "Mozzarella Cheese", "Butter", "Green Sauce", "BBQ Sauce",
         "Mexican Sauce", "Schezwan Sauce", "Spring Onion", "Red Capsicum",
@@ -356,7 +356,7 @@ menu = {
         "Dry Fruits Diet": ["Diet Milk", "Cashew / Nuts", "Dry Fruits", "Badam"],
     },
 
-    "CHEESEY CHIKEN": {
+    "CHEESEY CHICKEN": {
         "Chicken Club Sandwich": ["Bread", "Chicken", "Mayonnaisse", "Slices", "Butter"],
         "Chicken Mini Sandwich": ["Bread", "Chicken", "Mayonnaisse", "Slices", "Butter"],
         "Samoona": ["Samoona", "Chicken", "Mayonnaisse", "Slices", "Butter"],
@@ -861,7 +861,7 @@ def login():
                 font-size:16px;
             "
          onclick="event.stopPropagation()">
-            🔓 ANDAR JANE K LIYE AAPKA DALIYEN NAA😁🤩
+            🔓 ANDAR JANE K LIYE AAPKA PIN DALIYEN NAA😁🤩
         </button>
 
     </form>
@@ -869,7 +869,7 @@ def login():
     <br>
 
     <a href="/staff">
-        👀 Staff View OHH HELLO IDHAR DEKHO IDHAR
+        👀 STAFF VIEW "OHH HELLO IDHAR DEKHO IDHAR"
     </a>
 
     
@@ -979,7 +979,7 @@ def history():
         {% else %}
 
         <p style="text-align:center;">
-            KUCH BHI NAHI HAI 
+            YEAAHHH KHAALLII HAI 
         </p>
 
         {% endfor %}
