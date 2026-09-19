@@ -1476,7 +1476,7 @@ HTML = """
 <style>
 body{font-family:Arial,sans-serif;background:#f3f5f7;margin:0;padding:15px}
 h1{text-align:center}
-.dot-menu{position:fixed;top:12px;right:12px;z-index:9999}.dot-menu>button{background:#111;color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:25px;cursor:pointer}.dot-panel{display:none;position:absolute;right:0;top:50px;background:white;min-width:210px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:8px}.dot-panel a{display:block;padding:12px 14px;text-decoration:none;color:#111;border-radius:9px;font-weight:bold}.dot-panel a:hover{background:#f1f1f1}.dot-menu.open .dot-panel{display:block}.notify-page{max-width:700px;margin:50px auto}.form-card{background:white;padding:18px;border-radius:15px;box-shadow:0 3px 12px rgba(0,0,0,.08)}.form-card input,.form-card select,.form-card textarea{width:100%;box-sizing:border-box;margin:6px 0 12px;padding:11px;border:1px solid #ccc;border-radius:9px}.primary{background:#28a745;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.danger{background:#dc3545;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.notice{padding:10px;border-radius:9px;background:#eaf7ee;margin-bottom:12px}.error{padding:10px;border-radius:9px;background:#ffe9e9;color:#a00;margin-bottom:12px} .section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}
+.dot-menu{position:fixed;top:12px;right:12px;z-index:9999}.dot-menu>button{background:#111;color:white;border:none;border-radius:50%;width:44px;height:44px;font-size:25px;cursor:pointer}.dot-panel{display:none;position:absolute;right:0;top:50px;background:white;min-width:210px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:8px}.dot-panel a{display:block;padding:12px 14px;text-decoration:none;color:#111;border-radius:9px;font-weight:bold}.dot-panel a:hover{background:#f1f1f1}.dot-menu.open .dot-panel{display:block}.notify-page{max-width:700px;margin:50px auto}.form-card{background:white;padding:18px;border-radius:15px;box-shadow:0 3px 12px rgba(0,0,0,.08)}.form-card input,.form-card select,.form-card textarea{width:100%;box-sizing:border-box;margin:6px 0 12px;padding:11px;border:1px solid #ccc;border-radius:9px}.primary{background:#28a745;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.danger{background:#dc3545;color:white;border:none;border-radius:9px;padding:11px 16px;font-weight:bold}.notice{padding:10px;border-radius:9px;background:#eaf7ee;margin-bottom:12px}.error{padding:10px;border-radius:9px;background:#ffe9e9;color:#a00;margin-bottom:12px} .section{background:white;padding:15px;margin-bottom:18px;border-radius:15px;box-shadow:0 3px 10px rgba(0,0,0,.08)}.dashboard{max-width:900px;margin:0 auto 18px}.dashboard-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.dashboard-title h2{margin:0;font-size:20px}.live-pill{font-size:12px;font-weight:bold;background:#eaf7ee;color:#198754;padding:6px 10px;border-radius:999px}.dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.dash-card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 3px 10px rgba(0,0,0,.08);border:1px solid #eee}.dash-label{font-size:12px;color:#777;font-weight:bold}.dash-number{font-size:28px;font-weight:800;margin-top:4px}.dash-note{font-size:11px;color:#888;margin-top:2px}.dash-out{border-left:5px solid #dc3545}.dash-limited{border-left:5px solid #ffc107}.dash-on{border-left:5px solid #28a745}.dash-menu{border-left:5px solid #6c757d}@media(max-width:650px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-card{padding:12px}.dash-number{font-size:24px}}
 .card{background:#f8f8f8;padding:12px;margin:10px 0;border-radius:10px}
 .available{border-left:6px solid green}.out{border-left:6px solid red}.limited{border-left:6px solid orange}.dependency-line{margin-top:7px;padding-left:4px;color:#444;font-size:14px}
 button{border:none;padding:8px 12px;border-radius:8px;margin:4px 2px;font-weight:bold;cursor:pointer}
@@ -1503,6 +1503,14 @@ input{padding:8px;border:1px solid #ccc;border-radius:7px;width:110px}
 <a href="/history" style="display:inline-block;background:#343a40;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">📋 STOCK HISTORY</a>
 <a href="/logout" style="display:inline-block;background:#dc3545;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;margin-left:6px">🔒 LOGOUT</a>
 </div>
+<section class="dashboard" aria-label="Kitchen Dashboard">
+<div class="dashboard-title"><h2>📊 KITCHEN DASHBOARD</h2><span class="live-pill">● LIVE</span></div>
+<div class="dashboard-grid">
+<div class="dash-card dash-out"><div class="dash-label">🔴 OUT ALERTS</div><div class="dash-number" id="dash-out">0</div><div class="dash-note">Need attention</div></div>
+<div class="dash-card dash-limited"><div class="dash-label">🟡 LIMITED</div><div class="dash-number" id="dash-limited">0</div><div class="dash-note">Limited stock/items</div></div>
+<div class="dash-card dash-on"><div class="dash-label">🟢 INGREDIENTS ON</div><div class="dash-number" id="dash-on">0</div><div class="dash-note">Available ingredients</div></div>
+<div class="dash-card dash-menu"><div class="dash-label">🥤 MENU CATEGORIES</div><div class="dash-number" id="dash-menu">0</div><div class="dash-note">Total categories</div></div>
+</div></section>
 <div id="kitchen-live-root">Loading...</div>
 <script>
 let kitchenEditing=false;
@@ -1515,6 +1523,7 @@ async function refreshKitchen(){
       .map(d=>d.dataset.key || d.dataset.category || d.dataset.ingredient)
       .filter(Boolean);
     root.innerHTML=await r.text();
+    updateKitchenDashboard();
     open.forEach(key=>{
       const d=Array.from(root.querySelectorAll('details')).find(x=>
         (x.dataset.key || x.dataset.category || x.dataset.ingredient)===key
@@ -1523,6 +1532,20 @@ async function refreshKitchen(){
     });
   }catch(e){}
 }
+function updateKitchenDashboard(){
+  const root=document.getElementById('kitchen-live-root');
+  const out=root.querySelector('.section:nth-of-type(1)');
+  const limited=root.querySelector('.section:nth-of-type(2)');
+  const outCount=out ? out.querySelectorAll('.card.out').length : 0;
+  const limitedCount=limited ? limited.querySelectorAll('.card.limited').length : 0;
+  const onCount=root.querySelectorAll('.ingredient-master-row .green').length;
+  const menuCount=root.querySelectorAll('.menu-category').length;
+  document.getElementById('dash-out').textContent=outCount;
+  document.getElementById('dash-limited').textContent=limitedCount;
+  document.getElementById('dash-on').textContent=onCount;
+  document.getElementById('dash-menu').textContent=menuCount;
+}
+
 const kitchenRoot=document.getElementById('kitchen-live-root');
 let kitchenBusy=false;
 kitchenRoot.addEventListener('focusin',e=>{
